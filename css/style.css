@@ -830,6 +830,21 @@ body {
     overflow: auto;
     text-align: center;
     background: white;
+    -webkit-overflow-scrolling: touch;
+}
+
+.pdf-zoom-wrapper {
+    display: inline-block;
+    touch-action: none;
+    overflow: visible;
+}
+
+.pdf-zoom-wrapper canvas {
+    max-width: 100%;
+    height: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transform-origin: center center;
+    transition: transform 0.1s ease-out;
 }
 
 .pdf-container canvas {

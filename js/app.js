@@ -7,6 +7,7 @@ const ladsData = {
         fullName: 'Matthew Lewsey',
         outbound: { seat: '15A', group: '5', pdfPage: 1 },
         fiorentina: { sector: 'PLA', row: '1', seat: '30', gate: 'P02', pdfPage: 1 },
+        verona: { sector: 'Curva Est Inf 8', row: '1', seat: '14', gate: '9', pdfFile: 'images/verona_matt.pdf' },
         train: { pkpass: 'images/train_matt.pkpass', coach: '2' }
     },
     andy: {
@@ -14,6 +15,7 @@ const ladsData = {
         fullName: 'Andrew Brown',
         outbound: { seat: '15B', group: '5', pdfPage: 2 },
         fiorentina: { sector: 'PLA', row: '1', seat: '29', gate: 'P02', pdfPage: 2 },
+        verona: null, // TBC
         train: null // TBC
     },
     mark: {
@@ -21,6 +23,7 @@ const ladsData = {
         fullName: 'Mark Brown',
         outbound: { seat: '15C', group: '5', pdfPage: 3 },
         fiorentina: { sector: 'PLA', row: '1', seat: '28', gate: 'P02', pdfPage: 3 },
+        verona: { sector: 'Curva Est Inf 8', row: '1', seat: '13', gate: '9', pdfFile: 'images/verona_mark.pdf' },
         train: { pkpass: 'images/train_mark.pkpass', coach: '2' }
     },
     ken: {
@@ -28,6 +31,7 @@ const ladsData = {
         fullName: 'Kenneth Chu',
         outbound: { seat: '15D', group: '5', pdfPage: 4 },
         fiorentina: null, // TBC
+        verona: null, // TBC
         train: { pkpass: 'images/train_ken.pkpass', coach: '2' }
     },
     chris: {
@@ -35,6 +39,7 @@ const ladsData = {
         fullName: 'Christopher Phillips',
         outbound: { seat: '15E', group: '5', pdfPage: 5 },
         fiorentina: null, // TBC
+        verona: null, // TBC
         train: { pkpass: 'images/train_chris.pkpass', coach: '2' }
     }
 };
@@ -155,17 +160,34 @@ function updateBoardingPass(ladInfo) {
 
 function updateFootballTickets(ladInfo) {
     const fiorentinaTicket = document.getElementById('fiorentina-ticket');
+    const veronaTicket = document.getElementById('verona-ticket');
 
-    if (ladInfo.fiorentina) {
-        fiorentinaTicket.innerHTML = `
-            <button class="view-ticket-btn" onclick="viewFiorentinaTicket()">View Ticket</button>
-        `;
-    } else {
-        fiorentinaTicket.innerHTML = `
-            <div class="ticket-placeholder">
-                <p class="placeholder-msg">Ticket coming soon</p>
-            </div>
-        `;
+    if (fiorentinaTicket) {
+        if (ladInfo.fiorentina) {
+            fiorentinaTicket.innerHTML = `
+                <button class="view-ticket-btn" onclick="viewFiorentinaTicket()">View Ticket</button>
+            `;
+        } else {
+            fiorentinaTicket.innerHTML = `
+                <div class="ticket-placeholder">
+                    <p class="placeholder-msg">Ticket coming soon</p>
+                </div>
+            `;
+        }
+    }
+
+    if (veronaTicket) {
+        if (ladInfo.verona) {
+            veronaTicket.innerHTML = `
+                <button class="view-ticket-btn" onclick="viewVeronaTicket()">View Ticket</button>
+            `;
+        } else {
+            veronaTicket.innerHTML = `
+                <div class="ticket-placeholder">
+                    <p class="placeholder-msg">Ticket coming soon</p>
+                </div>
+            `;
+        }
     }
 }
 
@@ -182,6 +204,13 @@ function viewFiorentinaTicket() {
     if (!ladInfo.fiorentina) return;
     const page = ladInfo.fiorentina.pdfPage;
     openPdfModal('images/fiorentina_tickets.pdf', page, `${ladInfo.name}'s Fiorentina Ticket`);
+}
+
+function viewVeronaTicket() {
+    if (!currentLad) return;
+    const ladInfo = ladsData[currentLad];
+    if (!ladInfo.verona) return;
+    openPdfModal(ladInfo.verona.pdfFile, 1, `${ladInfo.name}'s Verona Ticket`);
 }
 
 function updateTrainTicket(ladInfo) {
@@ -258,16 +287,22 @@ async function renderPdfPage(url, pageNum, container) {
         const context = canvas.getContext('2d');
         canvas.height = viewport.height;
         canvas.width = viewport.width;
-        canvas.style.maxWidth = '100%';
-        canvas.style.height = 'auto';
+
+        // Create a wrapper for pinch-to-zoom
+        const wrapper = document.createElement('div');
+        wrapper.className = 'pdf-zoom-wrapper';
+        wrapper.appendChild(canvas);
 
         container.innerHTML = '';
-        container.appendChild(canvas);
+        container.appendChild(wrapper);
 
         await page.render({
             canvasContext: context,
             viewport: viewport
         }).promise;
+
+        // Add pinch-to-zoom functionality
+        setupPinchZoom(wrapper, canvas);
     } catch (error) {
         console.error('Error rendering PDF:', error);
         container.innerHTML = `
@@ -275,6 +310,78 @@ async function renderPdfPage(url, pageNum, container) {
             <a href="${url}#page=${pageNum}" target="_blank" class="view-pdf-link">Open PDF in new tab</a>
         `;
     }
+}
+
+function setupPinchZoom(wrapper, canvas) {
+    let currentScale = 1;
+    let startDistance = 0;
+    let startScale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    let startX = 0;
+    let startY = 0;
+    let isDragging = false;
+
+    function getDistance(touches) {
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function updateTransform() {
+        canvas.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
+    }
+
+    wrapper.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            startDistance = getDistance(e.touches);
+            startScale = currentScale;
+        } else if (e.touches.length === 1 && currentScale > 1) {
+            isDragging = true;
+            startX = e.touches[0].clientX - translateX;
+            startY = e.touches[0].clientY - translateY;
+        }
+    }, { passive: false });
+
+    wrapper.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            const currentDistance = getDistance(e.touches);
+            const scaleChange = currentDistance / startDistance;
+            currentScale = Math.min(Math.max(startScale * scaleChange, 1), 5);
+
+            if (currentScale === 1) {
+                translateX = 0;
+                translateY = 0;
+            }
+            updateTransform();
+        } else if (e.touches.length === 1 && isDragging && currentScale > 1) {
+            e.preventDefault();
+            translateX = e.touches[0].clientX - startX;
+            translateY = e.touches[0].clientY - startY;
+            updateTransform();
+        }
+    }, { passive: false });
+
+    wrapper.addEventListener('touchend', () => {
+        isDragging = false;
+    });
+
+    // Double-tap to reset zoom
+    let lastTap = 0;
+    wrapper.addEventListener('touchend', (e) => {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        if (tapLength < 300 && tapLength > 0) {
+            currentScale = 1;
+            translateX = 0;
+            translateY = 0;
+            updateTransform();
+            e.preventDefault();
+        }
+        lastTap = currentTime;
+    });
 }
 
 // Register Service Worker
