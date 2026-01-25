@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lads-trip-v11';
+const CACHE_NAME = 'lads-trip-v12';
 const urlsToCache = [
     './',
     './index.html',
@@ -14,6 +14,7 @@ const urlsToCache = [
     './images/mark.png',
     './images/boarding_pass.pdf',
     './images/fiorentina_tickets.pdf',
+    './images/fiorentina_ken_chris.pdf',
     './images/verona_matt.pdf',
     './images/verona_mark.pdf',
     './images/train_matt.pkpass',

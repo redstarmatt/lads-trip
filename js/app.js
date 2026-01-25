@@ -30,7 +30,7 @@ const ladsData = {
         name: 'Ken',
         fullName: 'Kenneth Chu',
         outbound: { seat: '15D', group: '5', pdfPage: 4 },
-        fiorentina: null, // TBC
+        fiorentina: { sector: 'PLA', row: '1', seat: '26', gate: 'P02', pdfFile: 'images/fiorentina_ken_chris.pdf', pdfPage: 2 },
         verona: null, // TBC
         train: { pkpass: 'images/train_ken.pkpass', coach: '2' }
     },
@@ -38,7 +38,7 @@ const ladsData = {
         name: 'Chris',
         fullName: 'Christopher Phillips',
         outbound: { seat: '15E', group: '5', pdfPage: 5 },
-        fiorentina: null, // TBC
+        fiorentina: { sector: 'PLA', row: '1', seat: '27', gate: 'P02', pdfFile: 'images/fiorentina_ken_chris.pdf', pdfPage: 1 },
         verona: null, // TBC
         train: { pkpass: 'images/train_chris.pkpass', coach: '2' }
     }
@@ -202,8 +202,9 @@ function viewFiorentinaTicket() {
     if (!currentLad) return;
     const ladInfo = ladsData[currentLad];
     if (!ladInfo.fiorentina) return;
+    const pdfFile = ladInfo.fiorentina.pdfFile || 'images/fiorentina_tickets.pdf';
     const page = ladInfo.fiorentina.pdfPage;
-    openPdfModal('images/fiorentina_tickets.pdf', page, `${ladInfo.name}'s Fiorentina Ticket`);
+    openPdfModal(pdfFile, page, `${ladInfo.name}'s Fiorentina Ticket`);
 }
 
 function viewVeronaTicket() {
