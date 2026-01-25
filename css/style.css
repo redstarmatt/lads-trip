@@ -727,6 +727,128 @@ body {
     background: var(--accent-light);
 }
 
+/* Info Cards (Weather & Transport) */
+.info-card {
+    margin-top: 16px;
+}
+
+.weather-header {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.transport-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.weather-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 16px;
+}
+
+.weather-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 12px 4px;
+    background: var(--secondary);
+    border-radius: 12px;
+}
+
+.weather-date {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.weather-icon {
+    font-size: 1.5rem;
+    margin: 4px 0;
+}
+
+.weather-temp {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.weather-city {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.weather-note {
+    padding: 12px 16px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: center;
+    border-top: 1px solid var(--secondary);
+}
+
+.transport-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--secondary);
+}
+
+.transport-section:last-of-type {
+    border-bottom: none;
+}
+
+.transport-city {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 10px;
+}
+
+.transport-tips {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.transport-tips li {
+    font-size: 0.85rem;
+    color: var(--text);
+    padding: 6px 0;
+    padding-left: 20px;
+    position: relative;
+    line-height: 1.4;
+}
+
+.transport-tips li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: bold;
+}
+
+.transport-tips strong {
+    color: var(--text);
+}
+
+.transport-apps {
+    padding: 12px 16px;
+    background: var(--secondary);
+    border-radius: 0 0 12px 12px;
+}
+
+.app-tip {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin: 0;
+}
+
+.app-tip strong {
+    color: var(--accent);
+}
+
 /* Responsive adjustments */
 @media (max-width: 380px) {
     .app-title {
