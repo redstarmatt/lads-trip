@@ -1,0 +1,852 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary: #1a1a2e;
+    --secondary: #16213e;
+    --accent: #e94560;
+    --accent-light: #ff6b6b;
+    --text: #ffffff;
+    --text-muted: #a0a0a0;
+    --card-bg: #1f2940;
+    --success: #4ade80;
+    --warning: #fbbf24;
+    --verona-blue: #0033a0;
+    --fiorentina-purple: #5c4d9a;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: var(--primary);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.screen {
+    display: none;
+    min-height: 100vh;
+}
+
+.screen.active {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Select Screen */
+#select-screen {
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        linear-gradient(135deg, rgba(26, 26, 46, 0.92) 0%, rgba(22, 33, 62, 0.88) 100%),
+        url('https://images.unsplash.com/photo-1534445867742-43195f401b6c?w=800&q=80') center/cover,
+        url('https://images.unsplash.com/photo-1541370976299-4d24ebbc9077?w=800&q=80') center/cover;
+    background-blend-mode: normal, overlay, normal;
+    z-index: 0;
+}
+
+.backdrop::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        radial-gradient(circle at 20% 80%, rgba(233, 69, 96, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(92, 77, 154, 0.15) 0%, transparent 50%);
+}
+
+.select-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.logo-container {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.app-title {
+    font-size: 2.8rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+    text-shadow: 0 4px 30px rgba(233, 69, 96, 0.3);
+}
+
+.subtitle {
+    color: var(--text);
+    font-size: 1.2rem;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.dates {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin-top: 8px;
+}
+
+.select-prompt {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin-bottom: 20px;
+}
+
+.lads-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    max-width: 400px;
+    width: 100%;
+}
+
+.lads-grid .lad-card:nth-child(4),
+.lads-grid .lad-card:nth-child(5) {
+    grid-column: span 1;
+}
+
+.lads-grid::after {
+    content: '';
+    grid-column: span 1;
+}
+
+.lad-card {
+    background: rgba(31, 41, 64, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.lad-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(233, 69, 96, 0.3);
+}
+
+.lad-card:active {
+    transform: scale(0.95);
+}
+
+.lad-photo {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: var(--secondary);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 3px solid var(--accent);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Lad photos */
+#photo-matt {
+    background-image: url('../images/matt.png');
+}
+#photo-ken {
+    background-image: url('../images/ken.png');
+}
+#photo-chris {
+    background-image: url('../images/chris.png');
+}
+#photo-andy {
+    background-image: url('../images/andy.png');
+}
+#photo-mark {
+    background-image: url('../images/mark.png');
+}
+
+.lad-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* Main Screen */
+#main-screen {
+    flex-direction: column;
+}
+
+.app-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    background: var(--secondary);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 8px;
+    margin-right: 12px;
+}
+
+#welcome-msg {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.tab-nav {
+    display: flex;
+    background: var(--secondary);
+    padding: 0 12px 12px;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tab-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.tab-btn {
+    flex-shrink: 0;
+    padding: 10px 16px;
+    background: var(--card-bg);
+    border: none;
+    border-radius: 20px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.tab-btn.active {
+    background: var(--accent);
+    color: var(--text);
+}
+
+.content {
+    flex: 1;
+    padding: 16px;
+    padding-bottom: 32px;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Itinerary */
+.itinerary-day {
+    margin-bottom: 24px;
+}
+
+.day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--card-bg);
+}
+
+.day-date {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.day-title {
+    color: var(--accent);
+    font-size: 0.9rem;
+}
+
+.day-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.timeline-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--card-bg);
+    border-radius: 10px;
+    border-left: 4px solid var(--text-muted);
+}
+
+.timeline-item.flight {
+    border-left-color: #3b82f6;
+}
+
+.timeline-item.train {
+    border-left-color: #f59e0b;
+}
+
+.timeline-item.football {
+    border-left-color: var(--success);
+}
+
+.timeline-item.accommodation {
+    border-left-color: var(--accent);
+}
+
+.timeline-item .time {
+    font-weight: 700;
+    min-width: 55px;
+    color: var(--text);
+}
+
+.timeline-item .desc {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+/* Cards */
+.card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: var(--secondary);
+}
+
+.card-label {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.card-date {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* Flight Card */
+.flight-route {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 16px;
+}
+
+.airport {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.airport .code {
+    font-size: 1.8rem;
+    font-weight: 800;
+}
+
+.airport .city {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.airport .terminal {
+    font-size: 0.75rem;
+    color: var(--accent);
+    margin-top: 2px;
+}
+
+.flight-line {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin: 0 16px;
+}
+
+.flight-line::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--text-muted) 0%, var(--text-muted) 45%, transparent 45%, transparent 55%, var(--text-muted) 55%);
+}
+
+.train-line::before {
+    background: linear-gradient(90deg, #f59e0b 0%, #f59e0b 45%, transparent 45%, transparent 55%, #f59e0b 55%);
+}
+
+.plane-icon {
+    font-size: 1.5rem;
+    background: var(--card-bg);
+    padding: 0 8px;
+    position: relative;
+    z-index: 1;
+}
+
+.flight-times {
+    display: flex;
+    justify-content: space-around;
+    padding: 0 16px 16px;
+}
+
+.time-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.time-block .label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.time-block .time {
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.flight-details {
+    display: flex;
+    justify-content: space-around;
+    padding: 16px;
+    background: var(--secondary);
+    border-top: 1px solid var(--primary);
+}
+
+.flight-details .detail,
+.boarding-details .detail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.detail .label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.detail .value {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.boarding-info {
+    border-top: 2px dashed var(--primary);
+}
+
+.boarding-header {
+    background: var(--accent);
+    padding: 10px 16px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.boarding-details {
+    display: flex;
+    justify-content: space-around;
+    padding: 16px;
+}
+
+.seat-highlight {
+    background: var(--accent);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 1.1rem !important;
+}
+
+.placeholder-msg {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 8px;
+    font-style: italic;
+}
+
+.boarding-placeholder,
+.ticket-placeholder {
+    padding: 16px;
+    text-align: center;
+    background: var(--secondary);
+}
+
+/* Train Card */
+.train-card .card-header {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: var(--primary);
+}
+
+.train-card .card-label {
+    color: var(--primary);
+}
+
+.train-card .card-date {
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.train-placeholder {
+    padding: 24px 16px;
+    text-align: center;
+}
+
+.placeholder-note {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-top: 8px;
+}
+
+/* Match Card */
+.match-card.verona {
+    border-top: 4px solid var(--verona-blue);
+}
+
+.match-card.fiorentina {
+    border-top: 4px solid var(--fiorentina-purple);
+}
+
+.match-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+}
+
+.club-badge {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+}
+
+.club-badge-placeholder {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+
+.verona-badge {
+    background: var(--verona-blue);
+    color: #ffd700;
+}
+
+.fiorentina-badge {
+    background: var(--fiorentina-purple);
+    color: white;
+}
+
+.match-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.competition {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.match-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-top: 4px;
+}
+
+.match-details {
+    padding: 0 16px 16px;
+}
+
+.detail-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    color: var(--text-muted);
+}
+
+.detail-row .icon {
+    font-size: 1.1rem;
+}
+
+.ticket-info {
+    background: var(--secondary);
+    border-top: 1px solid var(--primary);
+}
+
+.ticket-header {
+    padding: 12px 16px;
+    font-weight: 600;
+    background: var(--success);
+    color: var(--primary);
+    text-align: center;
+}
+
+.ticket-header.pending {
+    background: var(--warning);
+}
+
+.ticket-details {
+    padding: 16px;
+}
+
+.ticket-details .detail-row {
+    color: var(--text);
+}
+
+/* Accommodation Card */
+.accommodation-photo {
+    height: 150px;
+    background-color: var(--secondary);
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.verona-photo {
+    background:
+        linear-gradient(to bottom, transparent 50%, rgba(26, 26, 46, 0.8) 100%),
+        url('https://images.unsplash.com/photo-1534445867742-43195f401b6c?w=600&q=80') center/cover;
+}
+
+.florence-photo {
+    background:
+        linear-gradient(to bottom, transparent 50%, rgba(26, 26, 46, 0.8) 100%),
+        url('https://images.unsplash.com/photo-1541370976299-4d24ebbc9077?w=600&q=80') center/cover;
+}
+
+.photo-placeholder {
+    font-size: 3rem;
+    opacity: 0.3;
+}
+
+.accommodation-details {
+    padding: 16px;
+}
+
+.property-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.property-address {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+}
+
+.check-times {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 12px;
+}
+
+.check-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.check-block .label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.check-block .value {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.location-note {
+    font-size: 0.85rem;
+    color: var(--accent);
+}
+
+.map-btn {
+    display: block;
+    background: var(--accent);
+    color: var(--text);
+    text-align: center;
+    padding: 14px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.3s ease;
+}
+
+.map-btn:hover {
+    background: var(--accent-light);
+}
+
+/* Responsive adjustments */
+@media (max-width: 380px) {
+    .app-title {
+        font-size: 2rem;
+    }
+
+    .lads-grid {
+        gap: 12px;
+    }
+
+    .lad-photo {
+        width: 60px;
+        height: 60px;
+    }
+}
+
+/* View Ticket Button */
+.view-ticket-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: var(--text);
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.view-ticket-btn:hover {
+    background: var(--accent-light);
+}
+
+.view-pdf-link {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 12px 24px;
+    background: var(--accent);
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border-radius: 16px;
+    max-width: 100%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: var(--secondary);
+    border-bottom: 1px solid var(--primary);
+}
+
+.modal-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.pdf-container {
+    padding: 16px;
+    overflow: auto;
+    text-align: center;
+    background: white;
+}
+
+.pdf-container canvas {
+    max-width: 100%;
+    height: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.loading-msg {
+    color: var(--primary);
+    padding: 40px;
+}
+
+/* PWA standalone mode */
+@media (display-mode: standalone) {
+    body {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}

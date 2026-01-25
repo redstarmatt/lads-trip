@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Lads, Lads, Lads!">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="images/icon-192.png">
+    <title>Lads, Lads, Lads!</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+</head>
+<body>
+    <!-- Name Selection Screen -->
+    <div id="select-screen" class="screen active">
+        <div class="backdrop"></div>
+        <div class="select-content">
+            <div class="logo-container">
+                <h1 class="app-title">Lads, Lads, Lads!</h1>
+                <p class="subtitle">Verona & Florence 2026</p>
+                <p class="dates">26-29 January</p>
+            </div>
+            <p class="select-prompt">Who are you?</p>
+            <div class="lads-grid">
+                <button class="lad-card" data-lad="matt" onclick="selectLad('matt')">
+                    <div class="lad-photo" id="photo-matt"></div>
+                    <span class="lad-name">Matt</span>
+                </button>
+                <button class="lad-card" data-lad="ken" onclick="selectLad('ken')">
+                    <div class="lad-photo" id="photo-ken"></div>
+                    <span class="lad-name">Ken</span>
+                </button>
+                <button class="lad-card" data-lad="chris" onclick="selectLad('chris')">
+                    <div class="lad-photo" id="photo-chris"></div>
+                    <span class="lad-name">Chris</span>
+                </button>
+                <button class="lad-card" data-lad="andy" onclick="selectLad('andy')">
+                    <div class="lad-photo" id="photo-andy"></div>
+                    <span class="lad-name">Andy</span>
+                </button>
+                <button class="lad-card" data-lad="mark" onclick="selectLad('mark')">
+                    <div class="lad-photo" id="photo-mark"></div>
+                    <span class="lad-name">Mark</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="main-screen" class="screen">
+        <header class="app-header">
+            <button id="back-btn" class="back-btn">&larr;</button>
+            <h2 id="welcome-msg">Welcome, Matt!</h2>
+        </header>
+
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="itinerary">Overview</button>
+            <button class="tab-btn" data-tab="flights">Flights</button>
+            <button class="tab-btn" data-tab="trains">Trains</button>
+            <button class="tab-btn" data-tab="football">Football</button>
+            <button class="tab-btn" data-tab="accommodation">Stay</button>
+        </nav>
+
+        <main class="content">
+            <!-- Itinerary Tab -->
+            <section id="itinerary" class="tab-content active">
+                <div class="itinerary-day">
+                    <div class="day-header">
+                        <span class="day-date">Mon 26 Jan</span>
+                        <span class="day-title">Arrival Day</span>
+                    </div>
+                    <div class="day-items">
+                        <div class="timeline-item flight">
+                            <span class="time">06:20</span>
+                            <span class="desc">Fly Gatwick → Verona (BA2590)</span>
+                        </div>
+                        <div class="timeline-item">
+                            <span class="time">~09:40</span>
+                            <span class="desc">Arrive Verona Villafranca</span>
+                        </div>
+                        <div class="timeline-item accommodation">
+                            <span class="time">15:00</span>
+                            <span class="desc">Check in - Via Mazzanti 7, Verona</span>
+                        </div>
+                        <div class="timeline-item football">
+                            <span class="time">19:45</span>
+                            <span class="desc">Hellas Verona vs Udinese</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="itinerary-day">
+                    <div class="day-header">
+                        <span class="day-date">Tue 27 Jan</span>
+                        <span class="day-title">Florence Day</span>
+                    </div>
+                    <div class="day-items">
+                        <div class="timeline-item train">
+                            <span class="time">14:22</span>
+                            <span class="desc">Italo train to Florence (arr 15:54)</span>
+                        </div>
+                        <div class="timeline-item accommodation">
+                            <span class="time">15:00</span>
+                            <span class="desc">Check in - La Mantellate, Florence</span>
+                        </div>
+                        <div class="timeline-item football">
+                            <span class="time">21:00</span>
+                            <span class="desc">Fiorentina vs Como (Coppa Italia)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="itinerary-day">
+                    <div class="day-header">
+                        <span class="day-date">Wed 28 Jan</span>
+                        <span class="day-title">Free Day</span>
+                    </div>
+                    <div class="day-items">
+                        <div class="timeline-item">
+                            <span class="time">All day</span>
+                            <span class="desc">Explore Florence</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="itinerary-day">
+                    <div class="day-header">
+                        <span class="day-date">Thu 29 Jan</span>
+                        <span class="day-title">Home</span>
+                    </div>
+                    <div class="day-items">
+                        <div class="timeline-item flight">
+                            <span class="time">13:20</span>
+                            <span class="desc">Fly Florence → Gatwick (VY6206)</span>
+                        </div>
+                        <div class="timeline-item">
+                            <span class="time">14:40</span>
+                            <span class="desc">Arrive London Gatwick</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Flights Tab -->
+            <section id="flights" class="tab-content">
+                <div class="card flight-card">
+                    <div class="card-header">
+                        <span class="card-label">Outbound</span>
+                        <span class="card-date">Mon 26 Jan 2026</span>
+                    </div>
+                    <div class="flight-route">
+                        <div class="airport">
+                            <span class="code">LGW</span>
+                            <span class="city">London Gatwick</span>
+                            <span class="terminal">Terminal S</span>
+                        </div>
+                        <div class="flight-line">
+                            <span class="plane-icon">✈</span>
+                        </div>
+                        <div class="airport">
+                            <span class="code">VRN</span>
+                            <span class="city">Verona</span>
+                            <span class="terminal">Villafranca</span>
+                        </div>
+                    </div>
+                    <div class="flight-times">
+                        <div class="time-block">
+                            <span class="label">Depart</span>
+                            <span class="time">06:20</span>
+                        </div>
+                        <div class="time-block">
+                            <span class="label">Arrive</span>
+                            <span class="time">09:40</span>
+                        </div>
+                    </div>
+                    <div class="flight-details">
+                        <div class="detail">
+                            <span class="label">Flight</span>
+                            <span class="value">BA2590</span>
+                        </div>
+                        <div class="detail">
+                            <span class="label">Airline</span>
+                            <span class="value">BA Euroflyer</span>
+                        </div>
+                        <div class="detail">
+                            <span class="label">Booking Ref</span>
+                            <span class="value">Z9IC5E</span>
+                        </div>
+                    </div>
+                    <button class="view-ticket-btn" onclick="viewBoardingPass()">View Boarding Pass</button>
+                </div>
+
+                <div class="card flight-card">
+                    <div class="card-header">
+                        <span class="card-label">Return</span>
+                        <span class="card-date">Thu 29 Jan 2026</span>
+                    </div>
+                    <div class="flight-route">
+                        <div class="airport">
+                            <span class="code">FLR</span>
+                            <span class="city">Florence</span>
+                            <span class="terminal">Peretola</span>
+                        </div>
+                        <div class="flight-line">
+                            <span class="plane-icon">✈</span>
+                        </div>
+                        <div class="airport">
+                            <span class="code">LGW</span>
+                            <span class="city">London Gatwick</span>
+                            <span class="terminal"></span>
+                        </div>
+                    </div>
+                    <div class="flight-times">
+                        <div class="time-block">
+                            <span class="label">Depart</span>
+                            <span class="time">13:20</span>
+                        </div>
+                        <div class="time-block">
+                            <span class="label">Arrive</span>
+                            <span class="time">14:40</span>
+                        </div>
+                    </div>
+                    <div class="flight-details">
+                        <div class="detail">
+                            <span class="label">Flight</span>
+                            <span class="value">VY6206</span>
+                        </div>
+                        <div class="detail">
+                            <span class="label">Airline</span>
+                            <span class="value">Vueling</span>
+                        </div>
+                        <div class="detail">
+                            <span class="label">Booking Ref</span>
+                            <span class="value">OEUDNY</span>
+                        </div>
+                    </div>
+                    <div class="boarding-placeholder">
+                        <p class="placeholder-msg">Check in online to get boarding pass</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Trains Tab -->
+            <section id="trains" class="tab-content">
+                <div class="card train-card">
+                    <div class="card-header">
+                        <span class="card-label">Verona → Florence</span>
+                        <span class="card-date">Tue 27 Jan 2026</span>
+                    </div>
+                    <div class="flight-route">
+                        <div class="airport">
+                            <span class="code">VRN</span>
+                            <span class="city">Verona Porta Nuova</span>
+                        </div>
+                        <div class="flight-line train-line">
+                            <span class="plane-icon">🚄</span>
+                        </div>
+                        <div class="airport">
+                            <span class="code">FI</span>
+                            <span class="city">Firenze S.M.N.</span>
+                        </div>
+                    </div>
+                    <div class="flight-times">
+                        <div class="time-block">
+                            <span class="label">Depart</span>
+                            <span class="time">14:22</span>
+                        </div>
+                        <div class="time-block">
+                            <span class="label">Arrive</span>
+                            <span class="time">15:54</span>
+                        </div>
+                    </div>
+                    <div class="flight-details">
+                        <div class="detail">
+                            <span class="label">Train</span>
+                            <span class="value">Italo 8959</span>
+                        </div>
+                        <div class="detail">
+                            <span class="label">Coach</span>
+                            <span class="value">2</span>
+                        </div>
+                        <div class="detail">
+                            <span class="label">Duration</span>
+                            <span class="value">1h 32m</span>
+                        </div>
+                    </div>
+                    <div id="train-ticket">
+                        <!-- Button or placeholder added by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Football Tab -->
+            <section id="football" class="tab-content">
+                <div class="card match-card verona">
+                    <div class="match-header">
+                        <div class="club-badge-placeholder verona-badge">HV</div>
+                        <div class="match-info">
+                            <span class="competition">Serie A</span>
+                            <span class="match-title">Hellas Verona vs Udinese</span>
+                        </div>
+                    </div>
+                    <div class="match-details">
+                        <div class="detail-row">
+                            <span class="icon">📅</span>
+                            <span>Mon 26 Jan 2026</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="icon">⏰</span>
+                            <span>19:45 kick-off</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="icon">🏟️</span>
+                            <span>Stadio Marcantonio Bentegodi</span>
+                        </div>
+                    </div>
+                    <div class="ticket-info" id="verona-ticket">
+                        <div class="ticket-header pending">Your Ticket</div>
+                        <div class="ticket-details">
+                            <p class="placeholder-msg">Ticket details coming soon</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card match-card fiorentina">
+                    <div class="match-header">
+                        <div class="club-badge-placeholder fiorentina-badge">ACF</div>
+                        <div class="match-info">
+                            <span class="competition">Coppa Italia Frecciarossa</span>
+                            <span class="match-title">Fiorentina vs Como</span>
+                        </div>
+                    </div>
+                    <div class="match-details">
+                        <div class="detail-row">
+                            <span class="icon">📅</span>
+                            <span>Tue 27 Jan 2026</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="icon">⏰</span>
+                            <span>21:00 kick-off</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="icon">🏟️</span>
+                            <span>Stadio Artemio Franchi, Florence</span>
+                        </div>
+                    </div>
+                    <div class="ticket-info" id="fiorentina-ticket">
+                        <!-- Button added by JS for those with tickets -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Accommodation Tab -->
+            <section id="accommodation" class="tab-content">
+                <div class="card accommodation-card">
+                    <div class="card-header">
+                        <span class="card-label">Verona</span>
+                        <span class="card-date">26-27 Jan</span>
+                    </div>
+                    <div class="accommodation-photo verona-photo">
+                    </div>
+                    <div class="accommodation-details">
+                        <h3 class="property-name">Apartment in Verona</h3>
+                        <p class="property-address">Via Mazzanti 7, Verona 37121</p>
+                        <div class="check-times">
+                            <div class="check-block">
+                                <span class="label">Check-in</span>
+                                <span class="value">15:00</span>
+                            </div>
+                            <div class="check-block">
+                                <span class="label">Check-out</span>
+                                <span class="value">TBC</span>
+                            </div>
+                        </div>
+                        <p class="location-note">Right by Piazza Erbe, near Arena di Verona</p>
+                    </div>
+                    <a href="https://maps.google.com/?q=Via+Mazzanti+7,+Verona+37121,+Italy" target="_blank" class="map-btn">
+                        Open in Maps
+                    </a>
+                </div>
+
+                <div class="card accommodation-card">
+                    <div class="card-header">
+                        <span class="card-label">Florence</span>
+                        <span class="card-date">27-29 Jan</span>
+                    </div>
+                    <div class="accommodation-photo florence-photo">
+                    </div>
+                    <div class="accommodation-details">
+                        <h3 class="property-name">La Mantellate Dwelling</h3>
+                        <p class="property-address">Historic Centre, Florence</p>
+                        <div class="check-times">
+                            <div class="check-block">
+                                <span class="label">Check-in</span>
+                                <span class="value">15:00</span>
+                            </div>
+                            <div class="check-block">
+                                <span class="label">Check-out</span>
+                                <span class="value">TBC</span>
+                            </div>
+                        </div>
+                        <p class="location-note">Near Fortezza da Basso & the Duomo</p>
+                    </div>
+                    <a href="https://maps.google.com/?q=La+Mantellate+Florence+Italy" target="_blank" class="map-btn">
+                        Open in Maps
+                    </a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- PDF Modal -->
+    <div id="pdf-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Boarding Pass</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div id="pdf-container" class="pdf-container">
+                <!-- PDF rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
