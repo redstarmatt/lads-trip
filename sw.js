@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lads-trip-v8';
+const CACHE_NAME = 'lads-trip-v9';
 const urlsToCache = [
     './',
     './index.html',
@@ -22,6 +22,8 @@ const urlsToCache = [
 
 // Install event
 self.addEventListener('install', event => {
+    // Force the new service worker to activate immediately
+    self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
@@ -64,7 +66,7 @@ self.addEventListener('fetch', event => {
     );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up old caches and take control immediately
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -75,6 +77,9 @@ self.addEventListener('activate', event => {
                     }
                 })
             );
+        }).then(() => {
+            // Take control of all pages immediately
+            return self.clients.claim();
         })
     );
 });
