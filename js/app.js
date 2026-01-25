@@ -15,7 +15,7 @@ const ladsData = {
         fullName: 'Andrew Brown',
         outbound: { seat: '15B', group: '5', pdfPage: 2 },
         fiorentina: { sector: 'PLA', row: '1', seat: '29', gate: 'P02', pdfPage: 2 },
-        verona: null, // TBC
+        verona: { sector: 'Curva Est Inf 8', row: '1', seat: '10', gate: '9', pdfFile: 'images/verona_andy.pdf' },
         train: null // TBC
     },
     mark: {
@@ -31,7 +31,7 @@ const ladsData = {
         fullName: 'Kenneth Chu',
         outbound: { seat: '15D', group: '5', pdfPage: 4 },
         fiorentina: { sector: 'PLA', row: '1', seat: '26', gate: 'P02', pdfFile: 'images/fiorentina_ken_chris.pdf', pdfPage: 2 },
-        verona: null, // TBC
+        verona: { sector: 'Curva Est Inf 8', row: '1', seat: '12', gate: '9', pdfFile: 'images/verona_ken.pdf' },
         train: { pkpass: 'images/train_ken.pkpass', coach: '2' }
     },
     chris: {
@@ -39,7 +39,7 @@ const ladsData = {
         fullName: 'Christopher Phillips',
         outbound: { seat: '15E', group: '5', pdfPage: 5 },
         fiorentina: { sector: 'PLA', row: '1', seat: '27', gate: 'P02', pdfFile: 'images/fiorentina_ken_chris.pdf', pdfPage: 1 },
-        verona: null, // TBC
+        verona: { sector: 'Curva Est Inf 8', row: '1', seat: '11', gate: '9', pdfFile: 'images/verona_chris.pdf' },
         train: { pkpass: 'images/train_chris.pkpass', coach: '2' }
     }
 };
