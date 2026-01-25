@@ -251,7 +251,7 @@ async function renderPdfPage(url, pageNum, container) {
         const pdf = await pdfjsLib.getDocument(url).promise;
         const page = await pdf.getPage(pageNum);
 
-        const scale = 1.5;
+        const scale = 3.0;
         const viewport = page.getViewport({ scale });
 
         const canvas = document.createElement('canvas');
