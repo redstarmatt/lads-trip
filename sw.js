@@ -1,23 +1,23 @@
-const CACHE_NAME = 'lads-trip-v6';
+const CACHE_NAME = 'lads-trip-v7';
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/css/style.css',
-    '/js/app.js',
-    '/manifest.json',
-    '/images/icon-192.png',
-    '/images/icon-512.png',
-    '/images/matt.png',
-    '/images/ken.png',
-    '/images/chris.png',
-    '/images/andy.png',
-    '/images/mark.png',
-    '/images/boarding_pass.pdf',
-    '/images/fiorentina_tickets.pdf',
-    '/images/train_matt.pkpass',
-    '/images/train_mark.pkpass',
-    '/images/train_ken.pkpass',
-    '/images/train_chris.pkpass'
+    './',
+    './index.html',
+    './css/style.css',
+    './js/app.js',
+    './manifest.json',
+    './images/icon-192.png',
+    './images/icon-512.png',
+    './images/matt.png',
+    './images/ken.png',
+    './images/chris.png',
+    './images/andy.png',
+    './images/mark.png',
+    './images/boarding_pass.pdf',
+    './images/fiorentina_tickets.pdf',
+    './images/train_matt.pkpass',
+    './images/train_mark.pkpass',
+    './images/train_ken.pkpass',
+    './images/train_chris.pkpass'
 ];
 
 // Install event
