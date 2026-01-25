@@ -141,12 +141,14 @@ function switchTab(tabId) {
 }
 
 function updateBoardingPass(ladInfo) {
-    // Outbound flight
+    // Outbound flight - elements may not exist
     const outboundSeat = document.getElementById('outbound-seat');
     const outboundGroup = document.getElementById('outbound-group');
 
-    if (ladInfo.outbound) {
+    if (ladInfo.outbound && outboundSeat) {
         outboundSeat.textContent = ladInfo.outbound.seat;
+    }
+    if (ladInfo.outbound && outboundGroup) {
         outboundGroup.textContent = ladInfo.outbound.group;
     }
 }
