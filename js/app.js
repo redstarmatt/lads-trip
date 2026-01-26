@@ -401,17 +401,39 @@ let expensesCache = [];
 let isSyncing = false;
 let lastSyncTime = 0;
 
-// Fetch expenses from JSONBlob
+// Fetch expenses from JSONBlob and merge with local
 async function fetchExpenses() {
     try {
         showSyncStatus('syncing');
         const response = await fetch(JSONBLOB_URL, {
-            headers: { 'Accept': 'application/json' }
+            headers: { 'Accept': 'application/json' },
+            cache: 'no-store'
         });
         if (!response.ok) throw new Error('Failed to fetch');
         const data = await response.json();
-        expensesCache = data.expenses || [];
+        const cloudExpenses = data.expenses || [];
+
+        // Get local expenses
+        const stored = localStorage.getItem(EXPENSES_KEY);
+        const localExpenses = stored ? JSON.parse(stored) : [];
+
+        // Merge: combine all unique expenses by ID
+        const allExpenses = new Map();
+        localExpenses.forEach(e => allExpenses.set(e.id, e));
+        cloudExpenses.forEach(e => allExpenses.set(e.id, e));
+
+        expensesCache = Array.from(allExpenses.values());
+        // Sort by timestamp
+        expensesCache.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
         localStorage.setItem(EXPENSES_KEY, JSON.stringify(expensesCache));
+
+        // If we merged in local expenses that weren't in cloud, push back
+        if (expensesCache.length > cloudExpenses.length) {
+            console.log('Pushing merged expenses back to cloud');
+            await saveExpensesToCloud(expensesCache);
+        }
+
         lastSyncTime = Date.now();
         showSyncStatus('synced');
         return expensesCache;
@@ -481,22 +503,11 @@ async function saveExpenses(expenses) {
 }
 
 async function addExpense(description, amount, paidBy, splitBetween) {
-    // Fetch latest first to avoid conflicts, but merge with local
-    const localExpenses = [...expensesCache];
+    // Fetch latest first (which now merges)
     await fetchExpenses();
 
-    // Merge: keep any local expenses not in cloud (by id)
-    const cloudIds = new Set(expensesCache.map(e => e.id));
-    const mergedExpenses = [...expensesCache];
-    localExpenses.forEach(le => {
-        if (!cloudIds.has(le.id)) {
-            mergedExpenses.push(le);
-        }
-    });
-    expensesCache = mergedExpenses;
-
     const expense = {
-        id: Date.now(),
+        id: Date.now() + Math.random(), // Add randomness to avoid ID collisions
         description,
         amount: parseFloat(amount),
         paidBy,
