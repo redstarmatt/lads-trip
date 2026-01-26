@@ -596,7 +596,7 @@ function renderExpensesList() {
                     <div class="expense-meta">${paidByName} paid • Split: ${splitNames} • ${dateStr}</div>
                 </div>
                 <span class="expense-amount">${formatCurrency(expense.amount)}</span>
-                <button class="expense-delete" onclick="handleDeleteExpense(${expense.id})">×</button>
+                <button class="expense-delete" onclick="handleDeleteExpense('${expense.id}')">×</button>
             </div>
         `;
     }).join('');
