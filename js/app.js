@@ -439,10 +439,14 @@ async function saveExpensesToCloud(expenses) {
             },
             body: JSON.stringify({ expenses })
         });
-        if (!response.ok) throw new Error('Failed to save');
+        if (!response.ok) {
+            console.error('Save failed with status:', response.status);
+            throw new Error('Failed to save: ' + response.status);
+        }
         localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
         lastSyncTime = Date.now();
         showSyncStatus('synced');
+        console.log('Saved to cloud successfully, expenses count:', expenses.length);
     } catch (error) {
         console.error('Failed to sync:', error);
         showSyncStatus('offline');
@@ -470,15 +474,26 @@ function getExpenses() {
     return expensesCache;
 }
 
-function saveExpenses(expenses) {
+async function saveExpenses(expenses) {
     expensesCache = expenses;
     localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
-    saveExpensesToCloud(expenses);
+    await saveExpensesToCloud(expenses);
 }
 
 async function addExpense(description, amount, paidBy, splitBetween) {
-    // Fetch latest first to avoid conflicts
+    // Fetch latest first to avoid conflicts, but merge with local
+    const localExpenses = [...expensesCache];
     await fetchExpenses();
+
+    // Merge: keep any local expenses not in cloud (by id)
+    const cloudIds = new Set(expensesCache.map(e => e.id));
+    const mergedExpenses = [...expensesCache];
+    localExpenses.forEach(le => {
+        if (!cloudIds.has(le.id)) {
+            mergedExpenses.push(le);
+        }
+    });
+    expensesCache = mergedExpenses;
 
     const expense = {
         id: Date.now(),
@@ -489,14 +504,14 @@ async function addExpense(description, amount, paidBy, splitBetween) {
         timestamp: new Date().toISOString()
     };
     expensesCache.push(expense);
-    saveExpenses(expensesCache);
+    await saveExpenses(expensesCache);
     return expense;
 }
 
 async function deleteExpense(id) {
     await fetchExpenses();
     const expenses = expensesCache.filter(e => e.id !== id);
-    saveExpenses(expenses);
+    await saveExpenses(expenses);
 }
 
 function calculateBalances() {
