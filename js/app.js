@@ -763,6 +763,385 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// ============================================
+// BCLC GAME
+// ============================================
+
+const BCLC = {
+    players: [],
+    activePlayers: [],
+    currentPlayerIndex: 0,
+    deck: [],
+    currentCards: [],
+    flippedCount: 0,
+    totalFingers: 0,
+
+    // Card types: 5 blank, 2 small, 1 misshapen (mickey), 1 big
+    cardTypes: [
+        { type: 'blank', fingers: 0, count: 5 },
+        { type: 'small', fingers: 1, count: 2 },
+        { type: 'mickey', fingers: 2, count: 1 },
+        { type: 'big', fingers: 3, count: 1 }
+    ],
+
+    // Chicken SVGs for card fronts (different chickens for variety)
+    chickenSVGs: [
+        // Rooster
+        `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="50" cy="60" rx="25" ry="30" fill="#D2691E"/>
+            <circle cx="50" cy="35" r="18" fill="#D2691E"/>
+            <polygon points="50,5 45,20 55,20" fill="#FF4444"/>
+            <polygon points="50,8 47,18 53,18" fill="#FF6666"/>
+            <polygon points="50,11 48,17 52,17" fill="#FF8888"/>
+            <circle cx="44" cy="32" r="4" fill="white"/>
+            <circle cx="44" cy="32" r="2" fill="black"/>
+            <polygon points="50,38 45,45 55,45" fill="#FFA500"/>
+            <ellipse cx="30" cy="65" rx="12" ry="20" fill="#8B4513"/>
+            <ellipse cx="70" cy="65" rx="12" ry="20" fill="#8B4513"/>
+            <line x1="42" y1="90" x2="42" y2="98" stroke="#FFA500" stroke-width="3"/>
+            <line x1="58" y1="90" x2="58" y2="98" stroke="#FFA500" stroke-width="3"/>
+            <polygon points="20,50 5,60 20,70" fill="#8B4513"/>
+        </svg>`,
+        // Hen
+        `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="50" cy="62" rx="28" ry="28" fill="#CD853F"/>
+            <circle cx="50" cy="38" r="16" fill="#CD853F"/>
+            <polygon points="50,18 47,28 53,28" fill="#FF4444"/>
+            <circle cx="44" cy="35" r="3" fill="white"/>
+            <circle cx="44" cy="35" r="1.5" fill="black"/>
+            <circle cx="56" cy="35" r="3" fill="white"/>
+            <circle cx="56" cy="35" r="1.5" fill="black"/>
+            <polygon points="50,40 46,46 54,46" fill="#FFA500"/>
+            <ellipse cx="25" cy="60" rx="10" ry="15" fill="#A0522D"/>
+            <ellipse cx="75" cy="60" rx="10" ry="15" fill="#A0522D"/>
+            <line x1="40" y1="90" x2="40" y2="98" stroke="#FFA500" stroke-width="3"/>
+            <line x1="60" y1="90" x2="60" y2="98" stroke="#FFA500" stroke-width="3"/>
+        </svg>`,
+        // Chick
+        `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="50" cy="60" rx="25" ry="25" fill="#FFD700"/>
+            <circle cx="50" cy="38" r="18" fill="#FFD700"/>
+            <circle cx="42" cy="35" r="4" fill="white"/>
+            <circle cx="42" cy="35" r="2" fill="black"/>
+            <circle cx="58" cy="35" r="4" fill="white"/>
+            <circle cx="58" cy="35" r="2" fill="black"/>
+            <polygon points="50,42 46,50 54,50" fill="#FF8C00"/>
+            <ellipse cx="28" cy="58" rx="8" ry="12" fill="#FFE44D"/>
+            <ellipse cx="72" cy="58" rx="8" ry="12" fill="#FFE44D"/>
+            <line x1="42" y1="85" x2="42" y2="95" stroke="#FF8C00" stroke-width="2"/>
+            <line x1="58" y1="85" x2="58" y2="95" stroke="#FF8C00" stroke-width="2"/>
+            <ellipse cx="50" cy="22" rx="6" ry="4" fill="#FFE44D"/>
+        </svg>`,
+        // Fancy rooster
+        `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="50" cy="62" rx="26" ry="28" fill="#8B0000"/>
+            <circle cx="50" cy="36" r="17" fill="#8B0000"/>
+            <path d="M50,5 Q60,15 55,25 Q65,20 60,30 Q70,28 62,35 L50,20 L38,35 Q30,28 40,30 Q35,20 45,25 Q40,15 50,5" fill="#FF2222"/>
+            <circle cx="43" cy="33" r="4" fill="white"/>
+            <circle cx="43" cy="33" r="2" fill="black"/>
+            <polygon points="50,40 45,48 55,48" fill="#FFA500"/>
+            <path d="M50,48 Q55,55 50,52 Q52,58 48,55" fill="#FF4444"/>
+            <ellipse cx="28" cy="62" rx="12" ry="18" fill="#660000"/>
+            <ellipse cx="72" cy="62" rx="12" ry="18" fill="#660000"/>
+            <path d="M15,55 Q5,50 10,65 Q0,70 15,75" fill="#660000"/>
+            <line x1="40" y1="90" x2="40" y2="98" stroke="#FFA500" stroke-width="3"/>
+            <line x1="60" y1="90" x2="60" y2="98" stroke="#FFA500" stroke-width="3"/>
+        </svg>`,
+        // White hen
+        `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="50" cy="62" rx="28" ry="28" fill="#F5F5F5"/>
+            <circle cx="50" cy="38" r="16" fill="#F5F5F5"/>
+            <polygon points="50,22 47,30 53,30" fill="#FF4444"/>
+            <circle cx="44" cy="36" r="3" fill="#333"/>
+            <circle cx="56" cy="36" r="3" fill="#333"/>
+            <polygon points="50,42 46,48 54,48" fill="#FFA500"/>
+            <ellipse cx="25" cy="62" rx="12" ry="16" fill="#E8E8E8"/>
+            <ellipse cx="75" cy="62" rx="12" ry="16" fill="#E8E8E8"/>
+            <line x1="40" y1="90" x2="40" y2="98" stroke="#FFA500" stroke-width="3"/>
+            <line x1="60" y1="90" x2="60" y2="98" stroke="#FFA500" stroke-width="3"/>
+        </svg>`
+    ],
+
+    // Penalty SVGs for card backs
+    penaltySVGs: {
+        blank: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <text x="50" y="55" font-size="24" fill="#c9a66b" text-anchor="middle" font-weight="bold">SAFE</text>
+            <circle cx="50" cy="75" r="8" fill="none" stroke="#4ade80" stroke-width="3"/>
+            <path d="M44,75 L48,80 L56,70" stroke="#4ade80" stroke-width="3" fill="none"/>
+        </svg>`,
+
+        small: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <text x="50" y="25" font-size="12" fill="#c9a66b" text-anchor="middle">1 FINGER</text>
+            <ellipse cx="50" cy="55" rx="6" ry="15" fill="#FFB6C1"/>
+            <ellipse cx="50" cy="72" rx="4" ry="4" fill="#FFB6C1"/>
+            <circle cx="44" cy="72" r="5" fill="#FFB6C1"/>
+            <circle cx="56" cy="72" r="5" fill="#FFB6C1"/>
+        </svg>`,
+
+        mickey: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <text x="50" y="20" font-size="10" fill="#c9a66b" text-anchor="middle">2 FINGERS</text>
+            <ellipse cx="50" cy="55" rx="10" ry="20" fill="#FFB6C1"/>
+            <circle cx="35" cy="35" r="12" fill="#FFB6C1"/>
+            <circle cx="65" cy="35" r="12" fill="#FFB6C1"/>
+            <ellipse cx="50" cy="78" rx="5" ry="5" fill="#FFB6C1"/>
+            <circle cx="42" cy="80" r="6" fill="#FFB6C1"/>
+            <circle cx="58" cy="80" r="6" fill="#FFB6C1"/>
+        </svg>`,
+
+        big: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <text x="50" y="15" font-size="9" fill="#c9a66b" text-anchor="middle" font-weight="bold">3 FINGERS!</text>
+            <ellipse cx="50" cy="50" rx="16" ry="32" fill="#FF9999"/>
+            <ellipse cx="50" cy="50" rx="16" ry="32" fill="url(#veins)" opacity="0.5"/>
+            <defs>
+                <pattern id="veins" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M0,10 Q5,5 10,10 Q15,15 20,10" stroke="#FF6666" stroke-width="1" fill="none"/>
+                </pattern>
+            </defs>
+            <ellipse cx="50" cy="85" rx="8" ry="6" fill="#FF9999"/>
+            <circle cx="38" cy="88" r="8" fill="#FF9999"/>
+            <circle cx="62" cy="88" r="8" fill="#FF9999"/>
+            <path d="M34,75 Q30,70 34,65" stroke="#663333" stroke-width="0.5" fill="none"/>
+            <path d="M40,60 Q38,50 42,40" stroke="#663333" stroke-width="0.5" fill="none"/>
+            <path d="M55,65 Q58,55 54,45" stroke="#663333" stroke-width="0.5" fill="none"/>
+            <path d="M62,70 Q65,60 60,50" stroke="#663333" stroke-width="0.5" fill="none"/>
+            <path d="M30,90 Q25,85 30,80 M32,92 Q27,88 32,84" stroke="#553333" stroke-width="0.8" fill="none"/>
+            <path d="M70,90 Q75,85 70,80 M68,92 Q73,88 68,84" stroke="#553333" stroke-width="0.8" fill="none"/>
+        </svg>`
+    },
+
+    init() {
+        // Setup screen
+        document.getElementById('bclc-start-btn')?.addEventListener('click', () => this.startGame());
+        document.getElementById('bclc-play-again-btn')?.addEventListener('click', () => this.resetToSetup());
+
+        // Dealer mode toggle
+        document.querySelectorAll('.bclc-radio-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.bclc-radio-option').forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+                option.querySelector('input').checked = true;
+
+                const dealerSelect = document.getElementById('bclc-dealer-select');
+                if (option.dataset.mode === 'select') {
+                    dealerSelect.classList.remove('hidden');
+                } else {
+                    dealerSelect.classList.add('hidden');
+                }
+            });
+        });
+
+        // Update dealer dropdown when players change
+        document.querySelectorAll('#bclc-player-select input').forEach(checkbox => {
+            checkbox.addEventListener('change', () => this.updateDealerDropdown());
+        });
+
+        // Game screen
+        document.getElementById('bclc-card-1')?.addEventListener('click', () => this.flipCard(1));
+        document.getElementById('bclc-card-2')?.addEventListener('click', () => this.flipCard(2));
+        document.getElementById('bclc-im-out-btn')?.addEventListener('click', () => this.playerOut());
+        document.getElementById('bclc-next-btn')?.addEventListener('click', () => this.nextPlayer());
+        document.getElementById('bclc-reset-btn')?.addEventListener('click', () => this.resetToSetup());
+    },
+
+    updateDealerDropdown() {
+        const checkboxes = document.querySelectorAll('#bclc-player-select input:checked');
+        const players = Array.from(checkboxes).map(cb => cb.value);
+        const dropdown = document.getElementById('bclc-dealer-dropdown');
+
+        dropdown.innerHTML = players.map(p => {
+            const name = ladsData[p]?.name || p;
+            return `<option value="${p}">${name}</option>`;
+        }).join('');
+    },
+
+    createDeck() {
+        this.deck = [];
+        this.cardTypes.forEach(cardType => {
+            for (let i = 0; i < cardType.count; i++) {
+                this.deck.push({
+                    type: cardType.type,
+                    fingers: cardType.fingers
+                });
+            }
+        });
+        // Shuffle
+        for (let i = this.deck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
+        }
+    },
+
+    startGame() {
+        // Get selected players
+        const checkboxes = document.querySelectorAll('#bclc-player-select input:checked');
+        this.players = Array.from(checkboxes).map(cb => cb.value);
+
+        if (this.players.length < 2) {
+            alert('Need at least 2 players!');
+            return;
+        }
+
+        // Determine dealer
+        const dealerMode = document.querySelector('input[name="dealer-mode"]:checked').value;
+        let dealer;
+
+        if (dealerMode === 'random') {
+            dealer = this.players[Math.floor(Math.random() * this.players.length)];
+        } else {
+            dealer = document.getElementById('bclc-dealer-dropdown').value;
+            if (!this.players.includes(dealer)) {
+                alert('Dealer must be one of the players!');
+                return;
+            }
+        }
+
+        // Order players so dealer goes last
+        const dealerIndex = this.players.indexOf(dealer);
+        const orderedPlayers = [
+            ...this.players.slice(dealerIndex + 1),
+            ...this.players.slice(0, dealerIndex + 1)
+        ];
+
+        this.dealer = dealer;
+        this.activePlayers = [...orderedPlayers];
+        this.currentPlayerIndex = 0;
+        this.createDeck();
+
+        this.showScreen('game');
+        this.setupTurn();
+    },
+
+    setupTurn() {
+        this.flippedCount = 0;
+        this.totalFingers = 0;
+
+        // Deal 2 cards
+        if (this.deck.length < 2) {
+            this.createDeck(); // Reshuffle if needed
+        }
+        this.currentCards = [this.deck.pop(), this.deck.pop()];
+
+        // Update UI
+        const player = this.activePlayers[this.currentPlayerIndex];
+        const playerName = ladsData[player]?.name || player;
+        const dealerName = ladsData[this.dealer]?.name || this.dealer;
+        document.getElementById('bclc-current-player').textContent = `${playerName}'s Turn`;
+        document.getElementById('bclc-dealer-info').textContent = `Dealer: ${dealerName}`;
+        document.getElementById('bclc-players-left').textContent = `${this.activePlayers.length} left`;
+
+        // Reset cards
+        const card1 = document.getElementById('bclc-card-1');
+        const card2 = document.getElementById('bclc-card-2');
+        card1.dataset.flipped = 'false';
+        card2.dataset.flipped = 'false';
+
+        // Set random chicken fronts
+        const chicken1 = this.chickenSVGs[Math.floor(Math.random() * this.chickenSVGs.length)];
+        const chicken2 = this.chickenSVGs[Math.floor(Math.random() * this.chickenSVGs.length)];
+        document.getElementById('bclc-card-1-front').innerHTML = chicken1;
+        document.getElementById('bclc-card-2-front').innerHTML = chicken2;
+
+        // Set penalty backs
+        document.getElementById('bclc-card-1-back').innerHTML = this.penaltySVGs[this.currentCards[0].type];
+        document.getElementById('bclc-card-2-back').innerHTML = this.penaltySVGs[this.currentCards[1].type];
+
+        // Reset result and buttons
+        document.getElementById('bclc-result').innerHTML = '';
+        document.getElementById('bclc-result').className = 'bclc-result';
+        document.getElementById('bclc-next-btn').disabled = true;
+    },
+
+    flipCard(cardNum) {
+        const card = document.getElementById(`bclc-card-${cardNum}`);
+        if (card.dataset.flipped === 'true') return;
+
+        card.dataset.flipped = 'true';
+        this.flippedCount++;
+        this.totalFingers += this.currentCards[cardNum - 1].fingers;
+
+        // Check if both cards flipped
+        if (this.flippedCount === 2) {
+            this.showResult();
+        }
+    },
+
+    showResult() {
+        const resultEl = document.getElementById('bclc-result');
+        let resultClass = '';
+        let text = '';
+        let fingers = '';
+        let instruction = '';
+
+        if (this.totalFingers === 0) {
+            resultClass = 'safe';
+            text = 'SAFE!';
+            fingers = '&#128077;';
+            instruction = 'No drinking this round';
+        } else {
+            resultClass = `drink-${this.totalFingers}`;
+            text = this.totalFingers === 1 ? '1 FINGER' : `${this.totalFingers} FINGERS`;
+            fingers = '&#127866;'.repeat(this.totalFingers);
+            instruction = 'Drink up!';
+        }
+
+        resultEl.className = `bclc-result ${resultClass}`;
+        resultEl.innerHTML = `
+            <div class="bclc-result-text">${text}</div>
+            <div class="bclc-result-fingers">${fingers}</div>
+            <div class="bclc-result-instruction">${instruction}</div>
+        `;
+
+        document.getElementById('bclc-next-btn').disabled = false;
+    },
+
+    playerOut() {
+        const player = this.activePlayers[this.currentPlayerIndex];
+        const playerName = ladsData[player]?.name || player;
+
+        if (confirm(`${playerName} is out of beer?`)) {
+            this.activePlayers.splice(this.currentPlayerIndex, 1);
+
+            if (this.activePlayers.length <= 1) {
+                this.endGame();
+            } else {
+                // Adjust index if needed
+                if (this.currentPlayerIndex >= this.activePlayers.length) {
+                    this.currentPlayerIndex = 0;
+                }
+                this.setupTurn();
+            }
+        }
+    },
+
+    nextPlayer() {
+        this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.activePlayers.length;
+        this.setupTurn();
+    },
+
+    endGame() {
+        const winner = this.activePlayers[0];
+        const winnerName = ladsData[winner]?.name || winner;
+        document.getElementById('bclc-winner-name').textContent = winnerName;
+        this.showScreen('gameover');
+    },
+
+    resetToSetup() {
+        this.showScreen('setup');
+    },
+
+    showScreen(screen) {
+        document.getElementById('bclc-setup').classList.remove('active');
+        document.getElementById('bclc-game').classList.remove('active');
+        document.getElementById('bclc-gameover').classList.remove('active');
+        document.getElementById(`bclc-${screen}`).classList.add('active');
+    }
+};
+
+// Initialize BCLC when DOM loads
+document.addEventListener('DOMContentLoaded', () => {
+    BCLC.init();
+});
+
 // Register Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {

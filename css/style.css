@@ -1225,6 +1225,408 @@ body {
     color: var(--success);
 }
 
+/* BCLC Game */
+.bclc-screen {
+    display: none;
+}
+
+.bclc-screen.active {
+    display: block;
+}
+
+.bclc-intro-card {
+    text-align: center;
+    padding: 32px 16px;
+    background: linear-gradient(135deg, var(--card-bg) 0%, var(--secondary) 100%);
+}
+
+.bclc-logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.bclc-title {
+    font-size: 3.5rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 4px;
+}
+
+.bclc-subtitle {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-style: italic;
+}
+
+.bclc-tagline {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.bclc-player-select {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 16px;
+}
+
+.bclc-player-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--secondary);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 1;
+    min-width: 80px;
+    justify-content: center;
+}
+
+.bclc-player-checkbox:has(input:checked) {
+    background: var(--accent);
+}
+
+.bclc-player-checkbox input {
+    display: none;
+}
+
+.bclc-player-checkbox span {
+    font-weight: 600;
+}
+
+.card-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.bclc-dealer-options {
+    padding: 16px;
+}
+
+.bclc-dealer-mode {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.bclc-radio-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    background: var(--secondary);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.bclc-radio-option.active {
+    background: var(--accent);
+    border-color: var(--accent-light);
+}
+
+.bclc-radio-option input {
+    display: none;
+}
+
+.radio-label {
+    font-weight: 600;
+}
+
+.bclc-dealer-select {
+    margin-top: 12px;
+}
+
+.bclc-dealer-select.hidden {
+    display: none;
+}
+
+.bclc-dropdown {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--secondary);
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+}
+
+.bclc-dropdown option {
+    background: var(--secondary);
+    color: var(--text);
+}
+
+.bclc-start-btn {
+    display: block;
+    width: 100%;
+    padding: 18px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    color: var(--text);
+    border: none;
+    border-radius: 12px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bclc-start-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(233, 69, 96, 0.4);
+}
+
+.bclc-start-btn:active {
+    transform: scale(0.98);
+}
+
+/* Game Play Screen */
+.bclc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+
+.bclc-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.bclc-current-player {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.bclc-dealer-info {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.bclc-players-left {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    background: var(--secondary);
+    padding: 6px 12px;
+    border-radius: 12px;
+}
+
+.bclc-cards-area {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin: 32px 0;
+    perspective: 1000px;
+}
+
+.bclc-card {
+    width: 140px;
+    height: 200px;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+.bclc-card:active {
+    transform: scale(0.95);
+}
+
+.bclc-card[data-flipped="true"] {
+    pointer-events: none;
+}
+
+.bclc-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+
+.bclc-card[data-flipped="true"] .bclc-card-inner {
+    transform: rotateY(180deg);
+}
+
+.bclc-card-front,
+.bclc-card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.bclc-card-front {
+    background: linear-gradient(135deg, #f5e6d3 0%, #e8d5b7 100%);
+    border: 3px solid #c9a66b;
+}
+
+.bclc-card-back {
+    background: linear-gradient(135deg, #fff8f0 0%, #f5e6d3 100%);
+    border: 3px solid #c9a66b;
+    transform: rotateY(180deg);
+}
+
+.bclc-card-front svg,
+.bclc-card-back svg {
+    width: 80%;
+    height: 80%;
+}
+
+.bclc-result {
+    text-align: center;
+    padding: 20px;
+    min-height: 80px;
+}
+
+.bclc-result-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.bclc-result-fingers {
+    font-size: 3rem;
+    margin: 8px 0;
+}
+
+.bclc-result-instruction {
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+.bclc-result.safe .bclc-result-text {
+    color: var(--success);
+}
+
+.bclc-result.drink-1 .bclc-result-text {
+    color: var(--warning);
+}
+
+.bclc-result.drink-2 .bclc-result-text {
+    color: #ff9800;
+}
+
+.bclc-result.drink-3 .bclc-result-text {
+    color: var(--accent);
+}
+
+.bclc-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.bclc-out-btn {
+    flex: 1;
+    padding: 14px;
+    background: var(--secondary);
+    color: var(--text);
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.bclc-out-btn:hover {
+    background: var(--accent);
+}
+
+.bclc-next-btn {
+    flex: 2;
+    padding: 14px;
+    background: var(--success);
+    color: var(--primary);
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.bclc-next-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.bclc-reset-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    font-size: 0.9rem;
+    cursor: pointer;
+    margin-top: 24px;
+}
+
+.bclc-reset-btn:hover {
+    color: var(--accent);
+}
+
+/* Winner Screen */
+.bclc-winner-card {
+    text-align: center;
+    padding: 40px 24px;
+    background: linear-gradient(135deg, var(--card-bg) 0%, var(--secondary) 100%);
+}
+
+.winner-crown {
+    font-size: 5rem;
+    margin-bottom: 16px;
+}
+
+.winner-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--success);
+    margin-bottom: 8px;
+}
+
+.winner-name {
+    font-size: 2.5rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.winner-subtitle {
+    color: var(--text-muted);
+    margin-top: 8px;
+}
+
 /* PWA standalone mode */
 @media (display-mode: standalone) {
     body {

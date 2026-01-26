@@ -66,6 +66,7 @@
             <button class="tab-btn" data-tab="football">Football</button>
             <button class="tab-btn" data-tab="accommodation">Stay</button>
             <button class="tab-btn" data-tab="costs">Costs</button>
+            <button class="tab-btn" data-tab="bclc">BCLC</button>
         </nav>
 
         <main class="content">
@@ -543,6 +544,124 @@
                     <div id="settlement-list" class="settlement-list">
                         <p class="no-settlements">Add expenses to see who owes what</p>
                     </div>
+                </div>
+            </section>
+
+            <!-- BCLC Tab -->
+            <section id="bclc" class="tab-content">
+                <!-- Game Setup Screen -->
+                <div id="bclc-setup" class="bclc-screen active">
+                    <div class="card bclc-intro-card">
+                        <div class="bclc-logo">
+                            <span class="bclc-title">BCLC</span>
+                            <span class="bclc-subtitle">Big Cock Little Cock</span>
+                        </div>
+                        <p class="bclc-tagline">The classic beer mat drinking game, digitised</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-label">Who's Playing?</span>
+                        </div>
+                        <div class="bclc-player-select" id="bclc-player-select">
+                            <label class="bclc-player-checkbox">
+                                <input type="checkbox" value="matt" checked>
+                                <span>Matt</span>
+                            </label>
+                            <label class="bclc-player-checkbox">
+                                <input type="checkbox" value="ken" checked>
+                                <span>Ken</span>
+                            </label>
+                            <label class="bclc-player-checkbox">
+                                <input type="checkbox" value="chris" checked>
+                                <span>Chris</span>
+                            </label>
+                            <label class="bclc-player-checkbox">
+                                <input type="checkbox" value="andy" checked>
+                                <span>Andy</span>
+                            </label>
+                            <label class="bclc-player-checkbox">
+                                <input type="checkbox" value="mark" checked>
+                                <span>Mark</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-label">Choose the Dealer</span>
+                            <span class="card-hint">(Goes last)</span>
+                        </div>
+                        <div class="bclc-dealer-options">
+                            <div class="bclc-dealer-mode">
+                                <label class="bclc-radio-option active" data-mode="random">
+                                    <input type="radio" name="dealer-mode" value="random" checked>
+                                    <span class="radio-label">Random</span>
+                                </label>
+                                <label class="bclc-radio-option" data-mode="select">
+                                    <input type="radio" name="dealer-mode" value="select">
+                                    <span class="radio-label">Select</span>
+                                </label>
+                            </div>
+                            <div id="bclc-dealer-select" class="bclc-dealer-select hidden">
+                                <select id="bclc-dealer-dropdown" class="bclc-dropdown">
+                                    <option value="matt">Matt</option>
+                                    <option value="ken">Ken</option>
+                                    <option value="chris">Chris</option>
+                                    <option value="andy">Andy</option>
+                                    <option value="mark">Mark</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="bclc-start-btn" class="bclc-start-btn">Start Game</button>
+                </div>
+
+                <!-- Game Play Screen -->
+                <div id="bclc-game" class="bclc-screen">
+                    <div class="bclc-header">
+                        <div class="bclc-header-left">
+                            <span id="bclc-current-player" class="bclc-current-player">Matt's Turn</span>
+                            <span id="bclc-dealer-info" class="bclc-dealer-info">Dealer: Matt</span>
+                        </div>
+                        <span id="bclc-players-left" class="bclc-players-left">5 left</span>
+                    </div>
+
+                    <div class="bclc-cards-area">
+                        <div class="bclc-card" id="bclc-card-1" data-flipped="false">
+                            <div class="bclc-card-inner">
+                                <div class="bclc-card-front" id="bclc-card-1-front"></div>
+                                <div class="bclc-card-back" id="bclc-card-1-back"></div>
+                            </div>
+                        </div>
+                        <div class="bclc-card" id="bclc-card-2" data-flipped="false">
+                            <div class="bclc-card-inner">
+                                <div class="bclc-card-front" id="bclc-card-2-front"></div>
+                                <div class="bclc-card-back" id="bclc-card-2-back"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="bclc-result" class="bclc-result"></div>
+
+                    <div class="bclc-actions">
+                        <button id="bclc-im-out-btn" class="bclc-out-btn">I'm Out!</button>
+                        <button id="bclc-next-btn" class="bclc-next-btn" disabled>Next Player</button>
+                    </div>
+
+                    <button id="bclc-reset-btn" class="bclc-reset-btn">Reset Game</button>
+                </div>
+
+                <!-- Game Over Screen -->
+                <div id="bclc-gameover" class="bclc-screen">
+                    <div class="card bclc-winner-card">
+                        <div class="winner-crown">&#128081;</div>
+                        <h2 class="winner-title">Winner!</h2>
+                        <span id="bclc-winner-name" class="winner-name">Matt</span>
+                        <p class="winner-subtitle">Last one standing!</p>
+                    </div>
+                    <button id="bclc-play-again-btn" class="bclc-start-btn">Play Again</button>
                 </div>
             </section>
         </main>
