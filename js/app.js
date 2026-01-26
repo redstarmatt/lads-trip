@@ -1135,14 +1135,32 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Register Service Worker
+// Service Worker with force update
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-            .then(registration => {
-                console.log('SW registered:', registration.scope);
-            })
-            .catch(error => {
-                console.log('SW registration failed:', error);
-            });
+    window.addEventListener('load', async () => {
+        try {
+            // Unregister old service workers and clear caches
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const reg of registrations) {
+                await reg.unregister();
+                console.log('Unregistered old SW');
+            }
+
+            // Clear all caches
+            const cacheNames = await caches.keys();
+            for (const name of cacheNames) {
+                await caches.delete(name);
+                console.log('Deleted cache:', name);
+            }
+
+            // Register fresh
+            const registration = await navigator.serviceWorker.register('./sw.js');
+            console.log('SW registered:', registration.scope);
+
+            // Force update check
+            registration.update();
+        } catch (error) {
+            console.log('SW setup error:', error);
+        }
     });
 }
