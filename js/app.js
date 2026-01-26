@@ -394,7 +394,9 @@ function setupPinchZoom(wrapper, canvas) {
 
 const EXPENSES_KEY = 'lads-expenses';
 const JSONBLOB_ID = '019bfac8-1b6b-759d-a533-8c5644418d84';
-const JSONBLOB_URL = `https://jsonblob.com/api/jsonBlob/${JSONBLOB_ID}`;
+const JSONBLOB_BASE = `https://jsonblob.com/api/jsonBlob/${JSONBLOB_ID}`;
+// Use CORS proxy for browser requests
+const JSONBLOB_URL = `https://corsproxy.io/?${encodeURIComponent(JSONBLOB_BASE)}`;
 const allLads = ['matt', 'ken', 'chris', 'andy', 'mark'];
 
 let expensesCache = [];
