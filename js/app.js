@@ -393,18 +393,139 @@ function setupPinchZoom(wrapper, canvas) {
 // ============================================
 
 const EXPENSES_KEY = 'lads-expenses';
+const OFFLINE_QUEUE_KEY = 'lads-offline-queue';
 const JSONBLOB_ID = '019bfac8-1b6b-759d-a533-8c5644418d84';
 const JSONBLOB_URL = `https://jsonblob.com/api/jsonBlob/${JSONBLOB_ID}`;
 const allLads = ['matt', 'ken', 'chris', 'andy', 'mark'];
 
 let expensesCache = [];
 let isSyncing = false;
+let isFetching = false;
 let lastSyncTime = 0;
+let retryTimeout = null;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 5000;
+
+// Generate a unique ID that won't collide across devices
+function generateUniqueId() {
+    const timestamp = Date.now().toString(36);
+    const randomPart = Math.random().toString(36).substring(2, 10);
+    const devicePart = (navigator.userAgent.length % 1000).toString(36);
+    return `${timestamp}-${randomPart}-${devicePart}`;
+}
+
+// Offline queue management
+function getOfflineQueue() {
+    const stored = localStorage.getItem(OFFLINE_QUEUE_KEY);
+    return stored ? JSON.parse(stored) : [];
+}
+
+function addToOfflineQueue(action) {
+    const queue = getOfflineQueue();
+    queue.push({ ...action, queuedAt: Date.now() });
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+}
+
+function clearOfflineQueue() {
+    localStorage.removeItem(OFFLINE_QUEUE_KEY);
+}
+
+// Process offline queue when back online
+async function processOfflineQueue() {
+    const queue = getOfflineQueue();
+    if (queue.length === 0) return;
+
+    console.log('Processing offline queue:', queue.length, 'items');
+
+    // Fetch latest from cloud first
+    try {
+        const response = await fetch(JSONBLOB_URL, {
+            headers: { 'Accept': 'application/json' },
+            cache: 'no-store'
+        });
+        if (!response.ok) throw new Error('Failed to fetch');
+        const data = await response.json();
+        const cloudExpenses = data.expenses || [];
+
+        // Apply queued actions
+        let mergedExpenses = new Map();
+        cloudExpenses.forEach(e => mergedExpenses.set(e.id, e));
+
+        // Also include local expenses
+        expensesCache.forEach(e => mergedExpenses.set(e.id, e));
+
+        // Apply queue actions
+        queue.forEach(action => {
+            if (action.type === 'add') {
+                mergedExpenses.set(action.expense.id, action.expense);
+            } else if (action.type === 'delete') {
+                mergedExpenses.delete(action.id);
+            }
+        });
+
+        expensesCache = Array.from(mergedExpenses.values());
+        expensesCache.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+        // Save merged result
+        await saveExpensesToCloud(expensesCache);
+        clearOfflineQueue();
+        localStorage.setItem(EXPENSES_KEY, JSON.stringify(expensesCache));
+        updateCostsDisplay();
+        console.log('Offline queue processed successfully');
+    } catch (error) {
+        console.log('Failed to process offline queue, will retry later:', error);
+        scheduleRetry();
+    }
+}
+
+// Schedule a retry for failed syncs
+function scheduleRetry(retryCount = 0) {
+    if (retryTimeout) clearTimeout(retryTimeout);
+    if (retryCount >= MAX_RETRIES) {
+        console.log('Max retries reached, waiting for manual refresh');
+        return;
+    }
+
+    const delay = RETRY_DELAY * Math.pow(2, retryCount); // Exponential backoff
+    retryTimeout = setTimeout(() => {
+        if (navigator.onLine) {
+            processOfflineQueue();
+        } else {
+            scheduleRetry(retryCount + 1);
+        }
+    }, delay);
+}
+
+// Listen for online/offline events
+window.addEventListener('online', () => {
+    console.log('Back online, processing queue');
+    showSyncStatus('syncing');
+    processOfflineQueue();
+});
+
+window.addEventListener('offline', () => {
+    console.log('Gone offline');
+    showSyncStatus('offline');
+});
 
 // Fetch expenses from JSONBlob and merge with local
 async function fetchExpenses() {
+    // Prevent concurrent fetches
+    if (isFetching) {
+        console.log('Fetch already in progress, skipping');
+        return expensesCache;
+    }
+    isFetching = true;
+
     try {
         showSyncStatus('syncing');
+
+        // Process any pending offline queue first
+        const queue = getOfflineQueue();
+        if (queue.length > 0 && navigator.onLine) {
+            await processOfflineQueue();
+        }
+
         const response = await fetch(JSONBLOB_URL, {
             headers: { 'Accept': 'application/json' },
             cache: 'no-store'
@@ -418,6 +539,7 @@ async function fetchExpenses() {
         const localExpenses = stored ? JSON.parse(stored) : [];
 
         // Merge: combine all unique expenses by ID
+        // Cloud wins for duplicates (it's the source of truth after sync)
         const allExpenses = new Map();
         localExpenses.forEach(e => allExpenses.set(e.id, e));
         cloudExpenses.forEach(e => allExpenses.set(e.id, e));
@@ -443,6 +565,8 @@ async function fetchExpenses() {
         const stored = localStorage.getItem(EXPENSES_KEY);
         expensesCache = stored ? JSON.parse(stored) : [];
         return expensesCache;
+    } finally {
+        isFetching = false;
     }
 }
 
@@ -503,26 +627,60 @@ async function saveExpenses(expenses) {
 }
 
 async function addExpense(description, amount, paidBy, splitBetween) {
-    // Fetch latest first (which now merges)
-    await fetchExpenses();
-
     const expense = {
-        id: Date.now() + Math.random(), // Add randomness to avoid ID collisions
+        id: generateUniqueId(),
         description,
         amount: parseFloat(amount),
         paidBy,
         splitBetween,
         timestamp: new Date().toISOString()
     };
+
+    // Add to local cache immediately for responsive UI
     expensesCache.push(expense);
-    await saveExpenses(expensesCache);
+    localStorage.setItem(EXPENSES_KEY, JSON.stringify(expensesCache));
+
+    if (navigator.onLine) {
+        try {
+            // Fetch latest and merge
+            await fetchExpenses();
+            // Ensure our new expense is included
+            if (!expensesCache.find(e => e.id === expense.id)) {
+                expensesCache.push(expense);
+            }
+            await saveExpenses(expensesCache);
+        } catch (error) {
+            console.log('Failed to sync, queuing for later:', error);
+            addToOfflineQueue({ type: 'add', expense });
+            showSyncStatus('offline');
+        }
+    } else {
+        // Offline - queue for later sync
+        addToOfflineQueue({ type: 'add', expense });
+        showSyncStatus('offline');
+    }
+
     return expense;
 }
 
 async function deleteExpense(id) {
-    await fetchExpenses();
-    const expenses = expensesCache.filter(e => e.id !== id);
-    await saveExpenses(expenses);
+    // Remove from local cache immediately for responsive UI
+    expensesCache = expensesCache.filter(e => e.id !== id);
+    localStorage.setItem(EXPENSES_KEY, JSON.stringify(expensesCache));
+
+    if (navigator.onLine) {
+        try {
+            await saveExpenses(expensesCache);
+        } catch (error) {
+            console.log('Failed to sync delete, queuing for later:', error);
+            addToOfflineQueue({ type: 'delete', id });
+            showSyncStatus('offline');
+        }
+    } else {
+        // Offline - queue for later sync
+        addToOfflineQueue({ type: 'delete', id });
+        showSyncStatus('offline');
+    }
 }
 
 function calculateBalances() {
