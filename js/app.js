@@ -393,240 +393,80 @@ function setupPinchZoom(wrapper, canvas) {
 // ============================================
 
 const EXPENSES_KEY = 'lads-expenses';
-const OFFLINE_QUEUE_KEY = 'lads-offline-queue';
 const JSONBLOB_ID = '019bfac8-1b6b-759d-a533-8c5644418d84';
 const JSONBLOB_URL = `https://jsonblob.com/api/jsonBlob/${JSONBLOB_ID}`;
 const allLads = ['matt', 'ken', 'chris', 'andy', 'mark'];
 
 let expensesCache = [];
-let isSyncing = false;
-let isFetching = false;
 let lastSyncTime = 0;
-let retryTimeout = null;
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 5000;
 
-// Generate a unique ID that won't collide across devices
+// Generate a unique ID
 function generateUniqueId() {
-    const timestamp = Date.now().toString(36);
-    const randomPart = Math.random().toString(36).substring(2, 10);
-    const devicePart = (navigator.userAgent.length % 1000).toString(36);
-    return `${timestamp}-${randomPart}-${devicePart}`;
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 }
 
-// Offline queue management
-function getOfflineQueue() {
-    const stored = localStorage.getItem(OFFLINE_QUEUE_KEY);
-    return stored ? JSON.parse(stored) : [];
-}
-
-function addToOfflineQueue(action) {
-    const queue = getOfflineQueue();
-    queue.push({ ...action, queuedAt: Date.now() });
-    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
-}
-
-function clearOfflineQueue() {
-    localStorage.removeItem(OFFLINE_QUEUE_KEY);
-}
-
-// Process offline queue when back online
-async function processOfflineQueue() {
-    const queue = getOfflineQueue();
-    if (queue.length === 0) return;
-
-    console.log('Processing offline queue:', queue.length, 'items');
-
-    // Fetch latest from cloud first
-    try {
-        const response = await fetch(JSONBLOB_URL, {
-            headers: { 'Accept': 'application/json' },
-            cache: 'no-store'
-        });
-        if (!response.ok) throw new Error('Failed to fetch');
-        const data = await response.json();
-        const cloudExpenses = data.expenses || [];
-
-        // Apply queued actions
-        let mergedExpenses = new Map();
-        cloudExpenses.forEach(e => mergedExpenses.set(e.id, e));
-
-        // Also include local expenses
-        expensesCache.forEach(e => mergedExpenses.set(e.id, e));
-
-        // Apply queue actions
-        queue.forEach(action => {
-            if (action.type === 'add') {
-                mergedExpenses.set(action.expense.id, action.expense);
-            } else if (action.type === 'delete') {
-                mergedExpenses.delete(action.id);
-            }
-        });
-
-        expensesCache = Array.from(mergedExpenses.values());
-        expensesCache.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-        // Save merged result
-        await saveExpensesToCloud(expensesCache);
-        clearOfflineQueue();
-        localStorage.setItem(EXPENSES_KEY, JSON.stringify(expensesCache));
-        updateCostsDisplay();
-        console.log('Offline queue processed successfully');
-    } catch (error) {
-        console.log('Failed to process offline queue, will retry later:', error);
-        scheduleRetry();
-    }
-}
-
-// Schedule a retry for failed syncs
-function scheduleRetry(retryCount = 0) {
-    if (retryTimeout) clearTimeout(retryTimeout);
-    if (retryCount >= MAX_RETRIES) {
-        console.log('Max retries reached, waiting for manual refresh');
-        return;
-    }
-
-    const delay = RETRY_DELAY * Math.pow(2, retryCount); // Exponential backoff
-    retryTimeout = setTimeout(() => {
-        if (navigator.onLine) {
-            processOfflineQueue();
-        } else {
-            scheduleRetry(retryCount + 1);
-        }
-    }, delay);
-}
-
-// Listen for online/offline events
-window.addEventListener('online', () => {
-    console.log('Back online, processing queue');
-    showSyncStatus('syncing');
-    processOfflineQueue();
-});
-
-window.addEventListener('offline', () => {
-    console.log('Gone offline');
-    showSyncStatus('offline');
-});
-
-// Fetch expenses from JSONBlob and merge with local
+// Simple sync: fetch from cloud
 async function fetchExpenses() {
-    // Prevent concurrent fetches
-    if (isFetching) {
-        console.log('Fetch already in progress, skipping');
-        return expensesCache;
-    }
-    isFetching = true;
-
+    showSyncStatus('syncing');
     try {
-        showSyncStatus('syncing');
+        const response = await fetch(JSONBLOB_URL);
+        if (!response.ok) throw new Error('HTTP ' + response.status);
 
-        // Process any pending offline queue first
-        const queue = getOfflineQueue();
-        if (queue.length > 0 && navigator.onLine) {
-            await processOfflineQueue();
-        }
-
-        const response = await fetch(JSONBLOB_URL, {
-            method: 'GET',
-            mode: 'cors',
-            headers: { 'Accept': 'application/json' }
-        });
-        console.log('fetchExpenses response:', response.status);
-        if (!response.ok) throw new Error('Failed to fetch: ' + response.status);
         const data = await response.json();
         const cloudExpenses = data.expenses || [];
-        console.log('Fetched', cloudExpenses.length, 'expenses from cloud');
 
-        // Get local expenses
-        const stored = localStorage.getItem(EXPENSES_KEY);
-        const localExpenses = stored ? JSON.parse(stored) : [];
+        // Merge with local
+        const local = JSON.parse(localStorage.getItem(EXPENSES_KEY) || '[]');
+        const merged = new Map();
+        local.forEach(e => merged.set(e.id, e));
+        cloudExpenses.forEach(e => merged.set(e.id, e));
 
-        // Merge: combine all unique expenses by ID
-        // Cloud wins for duplicates (it's the source of truth after sync)
-        const allExpenses = new Map();
-        localExpenses.forEach(e => allExpenses.set(e.id, e));
-        cloudExpenses.forEach(e => allExpenses.set(e.id, e));
-
-        expensesCache = Array.from(allExpenses.values());
-        // Sort by timestamp
+        expensesCache = Array.from(merged.values());
         expensesCache.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
         localStorage.setItem(EXPENSES_KEY, JSON.stringify(expensesCache));
 
-        // If we merged in local expenses that weren't in cloud, push back
+        // Push local-only items to cloud
         if (expensesCache.length > cloudExpenses.length) {
-            console.log('Pushing merged expenses back to cloud');
-            await saveExpensesToCloud(expensesCache);
+            await syncToCloud();
         }
 
         lastSyncTime = Date.now();
         showSyncStatus('synced');
-        return expensesCache;
-    } catch (error) {
-        console.log('Using local cache:', error);
+    } catch (e) {
+        console.error('Fetch failed:', e);
+        expensesCache = JSON.parse(localStorage.getItem(EXPENSES_KEY) || '[]');
         showSyncStatus('offline');
-        const stored = localStorage.getItem(EXPENSES_KEY);
-        expensesCache = stored ? JSON.parse(stored) : [];
-        return expensesCache;
-    } finally {
-        isFetching = false;
     }
+    return expensesCache;
 }
 
-// Save expenses to JSONBlob
-async function saveExpensesToCloud(expenses) {
-    if (isSyncing) return;
-    isSyncing = true;
-    showSyncStatus('syncing');
-
+// Simple sync: save to cloud
+async function syncToCloud() {
     try {
         const response = await fetch(JSONBLOB_URL, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ expenses })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expenses: expensesCache })
         });
-        if (!response.ok) {
-            console.error('Save failed with status:', response.status);
-            throw new Error('Failed to save: ' + response.status);
-        }
-        localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
-        lastSyncTime = Date.now();
+        if (!response.ok) throw new Error('HTTP ' + response.status);
         showSyncStatus('synced');
-        console.log('Saved to cloud successfully, expenses count:', expenses.length);
-    } catch (error) {
-        console.error('Failed to sync:', error);
+        return true;
+    } catch (e) {
+        console.error('Save failed:', e);
         showSyncStatus('offline');
-        localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
-    } finally {
-        isSyncing = false;
+        return false;
     }
 }
 
 function showSyncStatus(status) {
-    const statusEl = document.getElementById('sync-status');
-    if (!statusEl) return;
-
-    statusEl.className = 'sync-status ' + status;
-    if (status === 'syncing') {
-        statusEl.textContent = 'Syncing...';
-    } else if (status === 'synced') {
-        statusEl.textContent = 'Synced';
-    } else {
-        statusEl.textContent = 'Offline';
-    }
+    const el = document.getElementById('sync-status');
+    if (!el) return;
+    el.className = 'sync-status ' + status;
+    el.textContent = status === 'syncing' ? 'Syncing...' : status === 'synced' ? 'Synced' : 'Offline';
 }
 
 function getExpenses() {
     return expensesCache;
-}
-
-async function saveExpenses(expenses) {
-    expensesCache = expenses;
-    localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
-    await saveExpensesToCloud(expenses);
 }
 
 async function addExpense(description, amount, paidBy, splitBetween) {
@@ -639,130 +479,16 @@ async function addExpense(description, amount, paidBy, splitBetween) {
         timestamp: new Date().toISOString()
     };
 
-    // Add to local cache immediately for responsive UI
     expensesCache.push(expense);
     localStorage.setItem(EXPENSES_KEY, JSON.stringify(expensesCache));
-
-    // Try to sync to cloud
-    try {
-        showSyncStatus('syncing');
-        console.log('Starting sync for expense:', expense.id);
-
-        // Fetch latest from cloud first
-        const response = await fetch(JSONBLOB_URL, {
-            method: 'GET',
-            mode: 'cors',
-            headers: { 'Accept': 'application/json' }
-        });
-
-        console.log('Fetch response:', response.status, response.ok);
-
-        if (response.ok) {
-            const data = await response.json();
-            const cloudExpenses = data.expenses || [];
-            console.log('Cloud expenses count:', cloudExpenses.length);
-
-            // Merge: add our new expense to cloud data
-            const mergedMap = new Map();
-            cloudExpenses.forEach(e => mergedMap.set(e.id, e));
-            expensesCache.forEach(e => mergedMap.set(e.id, e));
-
-            expensesCache = Array.from(mergedMap.values());
-            expensesCache.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            console.log('Merged expenses count:', expensesCache.length);
-
-            // Save merged result to cloud
-            const saveResponse = await fetch(JSONBLOB_URL, {
-                method: 'PUT',
-                mode: 'cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ expenses: expensesCache })
-            });
-
-            console.log('Save response:', saveResponse.status, saveResponse.ok);
-
-            if (saveResponse.ok) {
-                localStorage.setItem(EXPENSES_KEY, JSON.stringify(expensesCache));
-                lastSyncTime = Date.now();
-                showSyncStatus('synced');
-                console.log('Expense added and synced:', expense.id);
-            } else {
-                throw new Error('Save failed: ' + saveResponse.status);
-            }
-        } else {
-            throw new Error('Fetch failed: ' + response.status);
-        }
-    } catch (error) {
-        console.error('Sync failed:', error.message, error);
-        addToOfflineQueue({ type: 'add', expense });
-        showSyncStatus('offline');
-    }
-
+    await syncToCloud();
     return expense;
 }
 
 async function deleteExpense(id) {
-    // Remove from local cache immediately for responsive UI
     expensesCache = expensesCache.filter(e => e.id !== id);
     localStorage.setItem(EXPENSES_KEY, JSON.stringify(expensesCache));
-
-    // Try to sync to cloud
-    try {
-        showSyncStatus('syncing');
-
-        // Fetch latest from cloud
-        const response = await fetch(JSONBLOB_URL, {
-            headers: { 'Accept': 'application/json' },
-            cache: 'no-store'
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const cloudExpenses = data.expenses || [];
-
-            // Remove the deleted expense from cloud data too
-            const filteredCloud = cloudExpenses.filter(e => e.id !== id);
-
-            // Merge with local (local is source of truth for deletions)
-            const mergedMap = new Map();
-            filteredCloud.forEach(e => mergedMap.set(e.id, e));
-            expensesCache.forEach(e => mergedMap.set(e.id, e));
-
-            // Remove the deleted ID from merged result
-            mergedMap.delete(id);
-
-            expensesCache = Array.from(mergedMap.values());
-            expensesCache.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-            // Save to cloud
-            const saveResponse = await fetch(JSONBLOB_URL, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ expenses: expensesCache })
-            });
-
-            if (saveResponse.ok) {
-                localStorage.setItem(EXPENSES_KEY, JSON.stringify(expensesCache));
-                lastSyncTime = Date.now();
-                showSyncStatus('synced');
-                console.log('Expense deleted and synced:', id);
-            } else {
-                throw new Error('Save failed: ' + saveResponse.status);
-            }
-        } else {
-            throw new Error('Fetch failed: ' + response.status);
-        }
-    } catch (error) {
-        console.log('Sync failed, deleted locally:', error);
-        addToOfflineQueue({ type: 'delete', id });
-        showSyncStatus('offline');
-    }
+    await syncToCloud();
 }
 
 function calculateBalances() {
