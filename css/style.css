@@ -935,6 +935,296 @@ body {
     padding: 40px;
 }
 
+/* Costs Tab */
+.sync-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: var(--card-bg);
+    border-radius: 10px;
+}
+
+.sync-status {
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+.sync-status.synced {
+    background: rgba(74, 222, 128, 0.2);
+    color: var(--success);
+}
+
+.sync-status.syncing {
+    background: rgba(251, 191, 36, 0.2);
+    color: var(--warning);
+}
+
+.sync-status.offline {
+    background: rgba(233, 69, 96, 0.2);
+    color: var(--accent);
+}
+
+.refresh-btn {
+    background: var(--secondary);
+    border: none;
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.refresh-btn:hover {
+    background: var(--accent);
+}
+
+.refresh-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.balance-card .card-header {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+}
+
+.balance-display {
+    padding: 24px 16px;
+    text-align: center;
+}
+
+.balance-amount {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: 800;
+}
+
+.balance-amount.positive {
+    color: var(--success);
+}
+
+.balance-amount.negative {
+    color: var(--accent);
+}
+
+.balance-amount.zero {
+    color: var(--text-muted);
+}
+
+.balance-status {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* Expense Form */
+.expense-form {
+    padding: 16px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"] {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--secondary);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.form-group input::placeholder {
+    color: var(--text-muted);
+}
+
+.split-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.split-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--secondary);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.split-checkbox:has(input:checked) {
+    background: var(--accent);
+}
+
+.split-checkbox input {
+    display: none;
+}
+
+.split-checkbox span {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.add-expense-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--success);
+    color: var(--primary);
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+}
+
+.add-expense-btn:hover {
+    opacity: 0.9;
+}
+
+.add-expense-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Expenses List */
+.expenses-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.no-expenses,
+.no-settlements {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.expense-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--secondary);
+}
+
+.expense-item:last-child {
+    border-bottom: none;
+}
+
+.expense-info {
+    flex: 1;
+}
+
+.expense-desc {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.expense-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.expense-amount {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-right: 12px;
+}
+
+.expense-delete {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    transition: color 0.2s ease;
+}
+
+.expense-delete:hover {
+    color: var(--accent);
+}
+
+.total-spent {
+    font-weight: 700;
+    color: var(--accent);
+}
+
+/* Settlement */
+.settlement-header {
+    background: linear-gradient(135deg, var(--success) 0%, #22c55e 100%);
+}
+
+.settlement-header .card-label {
+    color: var(--primary);
+}
+
+.settlement-list {
+    padding: 8px 0;
+}
+
+.settlement-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--secondary);
+}
+
+.settlement-item:last-child {
+    border-bottom: none;
+}
+
+.settlement-arrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.settlement-from,
+.settlement-to {
+    font-weight: 600;
+}
+
+.settlement-icon {
+    color: var(--text-muted);
+}
+
+.settlement-amount {
+    font-weight: 700;
+    color: var(--success);
+}
+
 /* PWA standalone mode */
 @media (display-mode: standalone) {
     body {

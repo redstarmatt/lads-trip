@@ -65,6 +65,7 @@
             <button class="tab-btn" data-tab="trains">Trains</button>
             <button class="tab-btn" data-tab="football">Football</button>
             <button class="tab-btn" data-tab="accommodation">Stay</button>
+            <button class="tab-btn" data-tab="costs">Costs</button>
         </nav>
 
         <main class="content">
@@ -458,6 +459,90 @@
                     </div>
 
                     <p class="weather-note">Cold mornings, mild afternoons. Pack layers and a jacket for evening matches!</p>
+                </div>
+            </section>
+
+            <!-- Costs Tab -->
+            <section id="costs" class="tab-content">
+                <!-- Sync Status Bar -->
+                <div class="sync-bar">
+                    <span id="sync-status" class="sync-status">Synced</span>
+                    <button id="refresh-expenses" class="refresh-btn">Refresh</button>
+                </div>
+
+                <!-- Balance Summary -->
+                <div class="card balance-card">
+                    <div class="card-header">
+                        <span class="card-label">Your Balance</span>
+                    </div>
+                    <div class="balance-display">
+                        <span id="balance-amount" class="balance-amount">-</span>
+                        <span id="balance-status" class="balance-status"></span>
+                    </div>
+                </div>
+
+                <!-- Add Expense Form -->
+                <div class="card expense-form-card">
+                    <div class="card-header">
+                        <span class="card-label">Add Expense</span>
+                    </div>
+                    <form id="expense-form" class="expense-form">
+                        <div class="form-group">
+                            <label for="expense-desc">What did you buy?</label>
+                            <input type="text" id="expense-desc" placeholder="e.g. Dinner, Taxi, Beers..." required>
+                        </div>
+                        <div class="form-group">
+                            <label for="expense-amount">Amount (€)</label>
+                            <input type="number" id="expense-amount" placeholder="0.00" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Split between</label>
+                            <div class="split-options" id="split-options">
+                                <label class="split-checkbox">
+                                    <input type="checkbox" value="matt" checked>
+                                    <span>Matt</span>
+                                </label>
+                                <label class="split-checkbox">
+                                    <input type="checkbox" value="ken" checked>
+                                    <span>Ken</span>
+                                </label>
+                                <label class="split-checkbox">
+                                    <input type="checkbox" value="chris" checked>
+                                    <span>Chris</span>
+                                </label>
+                                <label class="split-checkbox">
+                                    <input type="checkbox" value="andy" checked>
+                                    <span>Andy</span>
+                                </label>
+                                <label class="split-checkbox">
+                                    <input type="checkbox" value="mark" checked>
+                                    <span>Mark</span>
+                                </label>
+                            </div>
+                        </div>
+                        <button type="submit" class="add-expense-btn">Add Expense</button>
+                    </form>
+                </div>
+
+                <!-- Expenses List -->
+                <div class="card expenses-list-card">
+                    <div class="card-header">
+                        <span class="card-label">All Expenses</span>
+                        <span id="total-spent" class="total-spent">€0.00</span>
+                    </div>
+                    <div id="expenses-list" class="expenses-list">
+                        <p class="no-expenses">No expenses yet</p>
+                    </div>
+                </div>
+
+                <!-- Settlement Summary -->
+                <div class="card settlement-card">
+                    <div class="card-header settlement-header">
+                        <span class="card-label">Settle Up</span>
+                    </div>
+                    <div id="settlement-list" class="settlement-list">
+                        <p class="no-settlements">Add expenses to see who owes what</p>
+                    </div>
                 </div>
             </section>
         </main>

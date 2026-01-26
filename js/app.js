@@ -124,6 +124,9 @@ function selectLad(lad) {
     // Update train tickets
     updateTrainTicket(ladInfo);
 
+    // Update costs display for this lad
+    updateCostsDisplay();
+
     // Show main screen
     if (selectScreenEl) selectScreenEl.classList.remove('active');
     if (mainScreenEl) mainScreenEl.classList.add('active');
@@ -384,6 +387,381 @@ function setupPinchZoom(wrapper, canvas) {
         lastTap = currentTime;
     });
 }
+
+// ============================================
+// COST SPLITTING FUNCTIONALITY
+// ============================================
+
+const EXPENSES_KEY = 'lads-expenses';
+const JSONBLOB_ID = '019bfac8-1b6b-759d-a533-8c5644418d84';
+const JSONBLOB_URL = `https://jsonblob.com/api/jsonBlob/${JSONBLOB_ID}`;
+const allLads = ['matt', 'ken', 'chris', 'andy', 'mark'];
+
+let expensesCache = [];
+let isSyncing = false;
+let lastSyncTime = 0;
+
+// Fetch expenses from JSONBlob
+async function fetchExpenses() {
+    try {
+        showSyncStatus('syncing');
+        const response = await fetch(JSONBLOB_URL, {
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!response.ok) throw new Error('Failed to fetch');
+        const data = await response.json();
+        expensesCache = data.expenses || [];
+        localStorage.setItem(EXPENSES_KEY, JSON.stringify(expensesCache));
+        lastSyncTime = Date.now();
+        showSyncStatus('synced');
+        return expensesCache;
+    } catch (error) {
+        console.log('Using local cache:', error);
+        showSyncStatus('offline');
+        const stored = localStorage.getItem(EXPENSES_KEY);
+        expensesCache = stored ? JSON.parse(stored) : [];
+        return expensesCache;
+    }
+}
+
+// Save expenses to JSONBlob
+async function saveExpensesToCloud(expenses) {
+    if (isSyncing) return;
+    isSyncing = true;
+    showSyncStatus('syncing');
+
+    try {
+        const response = await fetch(JSONBLOB_URL, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ expenses })
+        });
+        if (!response.ok) throw new Error('Failed to save');
+        localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
+        lastSyncTime = Date.now();
+        showSyncStatus('synced');
+    } catch (error) {
+        console.error('Failed to sync:', error);
+        showSyncStatus('offline');
+        localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
+    } finally {
+        isSyncing = false;
+    }
+}
+
+function showSyncStatus(status) {
+    const statusEl = document.getElementById('sync-status');
+    if (!statusEl) return;
+
+    statusEl.className = 'sync-status ' + status;
+    if (status === 'syncing') {
+        statusEl.textContent = 'Syncing...';
+    } else if (status === 'synced') {
+        statusEl.textContent = 'Synced';
+    } else {
+        statusEl.textContent = 'Offline';
+    }
+}
+
+function getExpenses() {
+    return expensesCache;
+}
+
+function saveExpenses(expenses) {
+    expensesCache = expenses;
+    localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
+    saveExpensesToCloud(expenses);
+}
+
+async function addExpense(description, amount, paidBy, splitBetween) {
+    // Fetch latest first to avoid conflicts
+    await fetchExpenses();
+
+    const expense = {
+        id: Date.now(),
+        description,
+        amount: parseFloat(amount),
+        paidBy,
+        splitBetween,
+        timestamp: new Date().toISOString()
+    };
+    expensesCache.push(expense);
+    saveExpenses(expensesCache);
+    return expense;
+}
+
+async function deleteExpense(id) {
+    await fetchExpenses();
+    const expenses = expensesCache.filter(e => e.id !== id);
+    saveExpenses(expenses);
+}
+
+function calculateBalances() {
+    const expenses = getExpenses();
+    const balances = {};
+
+    // Initialize all balances to 0
+    allLads.forEach(lad => balances[lad] = 0);
+
+    expenses.forEach(expense => {
+        const shareAmount = expense.amount / expense.splitBetween.length;
+
+        // Person who paid gets credit
+        balances[expense.paidBy] += expense.amount;
+
+        // Everyone who benefited owes their share
+        expense.splitBetween.forEach(lad => {
+            balances[lad] -= shareAmount;
+        });
+    });
+
+    return balances;
+}
+
+function calculateSettlements() {
+    const balances = calculateBalances();
+    const settlements = [];
+
+    // Separate into creditors and debtors
+    const creditors = [];
+    const debtors = [];
+
+    Object.entries(balances).forEach(([lad, balance]) => {
+        if (balance > 0.01) {
+            creditors.push({ lad, amount: balance });
+        } else if (balance < -0.01) {
+            debtors.push({ lad, amount: -balance });
+        }
+    });
+
+    // Sort by amount descending
+    creditors.sort((a, b) => b.amount - a.amount);
+    debtors.sort((a, b) => b.amount - a.amount);
+
+    // Match debtors to creditors
+    let i = 0, j = 0;
+    while (i < debtors.length && j < creditors.length) {
+        const debtor = debtors[i];
+        const creditor = creditors[j];
+        const amount = Math.min(debtor.amount, creditor.amount);
+
+        if (amount > 0.01) {
+            settlements.push({
+                from: debtor.lad,
+                to: creditor.lad,
+                amount: amount
+            });
+        }
+
+        debtor.amount -= amount;
+        creditor.amount -= amount;
+
+        if (debtor.amount < 0.01) i++;
+        if (creditor.amount < 0.01) j++;
+    }
+
+    return settlements;
+}
+
+function formatCurrency(amount) {
+    return '€' + Math.abs(amount).toFixed(2);
+}
+
+function renderExpensesList() {
+    const container = document.getElementById('expenses-list');
+    const totalEl = document.getElementById('total-spent');
+    if (!container) return;
+
+    const expenses = getExpenses();
+
+    if (expenses.length === 0) {
+        container.innerHTML = '<p class="no-expenses">No expenses yet</p>';
+        if (totalEl) totalEl.textContent = '€0.00';
+        return;
+    }
+
+    // Sort by most recent first
+    const sortedExpenses = [...expenses].sort((a, b) => b.id - a.id);
+
+    const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+    if (totalEl) totalEl.textContent = formatCurrency(total);
+
+    container.innerHTML = sortedExpenses.map(expense => {
+        const paidByName = ladsData[expense.paidBy]?.name || expense.paidBy;
+        const splitNames = expense.splitBetween.map(l => ladsData[l]?.name || l).join(', ');
+        const date = new Date(expense.timestamp);
+        const dateStr = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+        return `
+            <div class="expense-item" data-id="${expense.id}">
+                <div class="expense-info">
+                    <div class="expense-desc">${expense.description}</div>
+                    <div class="expense-meta">${paidByName} paid • Split: ${splitNames} • ${dateStr}</div>
+                </div>
+                <span class="expense-amount">${formatCurrency(expense.amount)}</span>
+                <button class="expense-delete" onclick="handleDeleteExpense(${expense.id})">×</button>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderBalance() {
+    const amountEl = document.getElementById('balance-amount');
+    const statusEl = document.getElementById('balance-status');
+    if (!amountEl || !currentLad) return;
+
+    const balances = calculateBalances();
+    const myBalance = balances[currentLad] || 0;
+
+    amountEl.textContent = formatCurrency(myBalance);
+    amountEl.classList.remove('positive', 'negative', 'zero');
+
+    if (myBalance > 0.01) {
+        amountEl.classList.add('positive');
+        amountEl.textContent = '+' + formatCurrency(myBalance);
+        statusEl.textContent = 'Others owe you';
+    } else if (myBalance < -0.01) {
+        amountEl.classList.add('negative');
+        amountEl.textContent = '-' + formatCurrency(myBalance);
+        statusEl.textContent = 'You owe others';
+    } else {
+        amountEl.classList.add('zero');
+        amountEl.textContent = '€0.00';
+        statusEl.textContent = 'All settled up!';
+    }
+}
+
+function renderSettlements() {
+    const container = document.getElementById('settlement-list');
+    if (!container) return;
+
+    const settlements = calculateSettlements();
+
+    if (settlements.length === 0) {
+        const expenses = getExpenses();
+        if (expenses.length === 0) {
+            container.innerHTML = '<p class="no-settlements">Add expenses to see who owes what</p>';
+        } else {
+            container.innerHTML = '<p class="no-settlements">All settled up!</p>';
+        }
+        return;
+    }
+
+    container.innerHTML = settlements.map(s => {
+        const fromName = ladsData[s.from]?.name || s.from;
+        const toName = ladsData[s.to]?.name || s.to;
+        return `
+            <div class="settlement-item">
+                <div class="settlement-arrow">
+                    <span class="settlement-from">${fromName}</span>
+                    <span class="settlement-icon">→</span>
+                    <span class="settlement-to">${toName}</span>
+                </div>
+                <span class="settlement-amount">${formatCurrency(s.amount)}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+async function handleDeleteExpense(id) {
+    if (confirm('Delete this expense?')) {
+        await deleteExpense(id);
+        updateCostsDisplay();
+    }
+}
+
+function updateCostsDisplay() {
+    renderExpensesList();
+    renderBalance();
+    renderSettlements();
+}
+
+function initCostsForm() {
+    const form = document.getElementById('expense-form');
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (!currentLad) {
+            alert('Please select who you are first');
+            return;
+        }
+
+        const descInput = document.getElementById('expense-desc');
+        const amountInput = document.getElementById('expense-amount');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const checkboxes = document.querySelectorAll('#split-options input:checked');
+
+        const description = descInput.value.trim();
+        const amount = parseFloat(amountInput.value);
+        const splitBetween = Array.from(checkboxes).map(cb => cb.value);
+
+        if (!description || !amount || amount <= 0) {
+            alert('Please fill in all fields');
+            return;
+        }
+
+        if (splitBetween.length === 0) {
+            alert('Please select at least one person to split with');
+            return;
+        }
+
+        // Disable button while saving
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Adding...';
+
+        await addExpense(description, amount, currentLad, splitBetween);
+
+        // Reset form
+        descInput.value = '';
+        amountInput.value = '';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Add Expense';
+
+        updateCostsDisplay();
+    });
+
+    // Refresh button
+    const refreshBtn = document.getElementById('refresh-expenses');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+            refreshBtn.disabled = true;
+            await fetchExpenses();
+            updateCostsDisplay();
+            refreshBtn.disabled = false;
+        });
+    }
+}
+
+// Initialize costs when DOM loads
+document.addEventListener('DOMContentLoaded', async () => {
+    initCostsForm();
+    // Load from local cache first for instant display
+    const stored = localStorage.getItem(EXPENSES_KEY);
+    expensesCache = stored ? JSON.parse(stored) : [];
+    updateCostsDisplay();
+    // Then fetch latest from cloud
+    await fetchExpenses();
+    updateCostsDisplay();
+});
+
+// Auto-refresh when costs tab becomes visible
+document.addEventListener('DOMContentLoaded', () => {
+    const costsTab = document.querySelector('[data-tab="costs"]');
+    if (costsTab) {
+        costsTab.addEventListener('click', async () => {
+            // Only refresh if it's been more than 10 seconds since last sync
+            if (Date.now() - lastSyncTime > 10000) {
+                await fetchExpenses();
+                updateCostsDisplay();
+            }
+        });
+    }
+});
 
 // Register Service Worker
 if ('serviceWorker' in navigator) {
