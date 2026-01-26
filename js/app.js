@@ -488,7 +488,9 @@ async function addExpense(description, amount, paidBy, splitBetween) {
 }
 
 async function deleteExpense(id) {
-    expensesCache = expensesCache.filter(e => e.id !== id);
+    // Convert to string for comparison (handles old numeric IDs and new string IDs)
+    const idStr = String(id);
+    expensesCache = expensesCache.filter(e => String(e.id) !== idStr);
     localStorage.setItem(EXPENSES_KEY, JSON.stringify(expensesCache));
     await syncToCloud();
 }
