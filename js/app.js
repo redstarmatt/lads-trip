@@ -527,12 +527,15 @@ async function fetchExpenses() {
         }
 
         const response = await fetch(JSONBLOB_URL, {
-            headers: { 'Accept': 'application/json' },
-            cache: 'no-store'
+            method: 'GET',
+            mode: 'cors',
+            headers: { 'Accept': 'application/json' }
         });
-        if (!response.ok) throw new Error('Failed to fetch');
+        console.log('fetchExpenses response:', response.status);
+        if (!response.ok) throw new Error('Failed to fetch: ' + response.status);
         const data = await response.json();
         const cloudExpenses = data.expenses || [];
+        console.log('Fetched', cloudExpenses.length, 'expenses from cloud');
 
         // Get local expenses
         const stored = localStorage.getItem(EXPENSES_KEY);
@@ -643,16 +646,21 @@ async function addExpense(description, amount, paidBy, splitBetween) {
     // Try to sync to cloud
     try {
         showSyncStatus('syncing');
+        console.log('Starting sync for expense:', expense.id);
 
         // Fetch latest from cloud first
         const response = await fetch(JSONBLOB_URL, {
-            headers: { 'Accept': 'application/json' },
-            cache: 'no-store'
+            method: 'GET',
+            mode: 'cors',
+            headers: { 'Accept': 'application/json' }
         });
+
+        console.log('Fetch response:', response.status, response.ok);
 
         if (response.ok) {
             const data = await response.json();
             const cloudExpenses = data.expenses || [];
+            console.log('Cloud expenses count:', cloudExpenses.length);
 
             // Merge: add our new expense to cloud data
             const mergedMap = new Map();
@@ -661,16 +669,20 @@ async function addExpense(description, amount, paidBy, splitBetween) {
 
             expensesCache = Array.from(mergedMap.values());
             expensesCache.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            console.log('Merged expenses count:', expensesCache.length);
 
             // Save merged result to cloud
             const saveResponse = await fetch(JSONBLOB_URL, {
                 method: 'PUT',
+                mode: 'cors',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({ expenses: expensesCache })
             });
+
+            console.log('Save response:', saveResponse.status, saveResponse.ok);
 
             if (saveResponse.ok) {
                 localStorage.setItem(EXPENSES_KEY, JSON.stringify(expensesCache));
@@ -684,7 +696,7 @@ async function addExpense(description, amount, paidBy, splitBetween) {
             throw new Error('Fetch failed: ' + response.status);
         }
     } catch (error) {
-        console.log('Sync failed, saved locally:', error);
+        console.error('Sync failed:', error.message, error);
         addToOfflineQueue({ type: 'add', expense });
         showSyncStatus('offline');
     }

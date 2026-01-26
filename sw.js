@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lads-trip-v23';
+const CACHE_NAME = 'lads-trip-v25';
 const urlsToCache = [
     './',
     './index.html',
@@ -44,6 +44,14 @@ self.addEventListener('install', event => {
 
 // Fetch event
 self.addEventListener('fetch', event => {
+    const url = event.request.url;
+
+    // NEVER cache or intercept JSONBlob API calls - always go to network
+    if (url.includes('jsonblob.com')) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request)
             .then(response => {
@@ -53,7 +61,7 @@ self.addEventListener('fetch', event => {
                 }
                 return fetch(event.request)
                     .then(response => {
-                        // Don't cache non-successful responses
+                        // Don't cache non-successful responses or cross-origin
                         if (!response || response.status !== 200 || response.type !== 'basic') {
                             return response;
                         }
