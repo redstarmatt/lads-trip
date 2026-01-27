@@ -2031,6 +2031,130 @@ body {
     margin-top: 4px;
 }
 
+/* Recommendations Tab */
+.recs-intro {
+    text-align: center;
+    padding: 20px 16px 8px;
+}
+
+.recs-city-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.recs-city-sub {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-top: 4px;
+}
+
+.recs-section {
+    margin-bottom: 8px;
+}
+
+.recs-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 4px 10px;
+}
+
+.recs-section-icon {
+    font-size: 1.3rem;
+}
+
+.recs-section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.recs-see .recs-section-title {
+    color: #3b82f6;
+}
+
+.recs-eat .recs-section-title {
+    color: #f59e0b;
+}
+
+.recs-do .recs-section-title {
+    color: var(--success);
+}
+
+.recs-card {
+    margin-bottom: 10px;
+}
+
+.recs-card-body {
+    padding: 14px 16px;
+}
+
+.recs-card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.recs-card-desc {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+    margin-bottom: 8px;
+}
+
+.recs-card-meta {
+    margin-bottom: 8px;
+}
+
+.recs-location {
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.recs-card-tip {
+    font-size: 0.8rem;
+    color: var(--warning);
+    background: rgba(251, 191, 36, 0.1);
+    padding: 8px 10px;
+    border-radius: 8px;
+    border-left: 3px solid var(--warning);
+    line-height: 1.4;
+}
+
+.recs-notes {
+    padding: 12px 16px;
+}
+
+.recs-note-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--secondary);
+}
+
+.recs-note-item:last-child {
+    border-bottom: none;
+}
+
+.recs-note-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.recs-note-item span:last-child {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
 /* PWA standalone mode */
 @media (display-mode: standalone) {
     body {
