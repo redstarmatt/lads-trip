@@ -66,6 +66,7 @@
             <button class="tab-btn" data-tab="football">Football</button>
             <button class="tab-btn" data-tab="accommodation">Stay</button>
             <button class="tab-btn" data-tab="costs">Costs</button>
+            <button class="tab-btn" data-tab="predictions">Predict</button>
             <button class="tab-btn" data-tab="bclc">BCLC</button>
         </nav>
 
@@ -503,6 +504,196 @@
                     <div id="settlement-list" class="settlement-list">
                         <p class="no-settlements">Add expenses to see who owes what</p>
                     </div>
+                </div>
+            </section>
+
+            <!-- Predictions Tab -->
+            <section id="predictions" class="tab-content">
+                <!-- Match Header Card -->
+                <div class="card pred-match-card">
+                    <div class="pred-match-header">
+                        <div class="pred-team">
+                            <div class="pred-badge fiorentina-badge">ACF</div>
+                            <span class="pred-team-name">Fiorentina</span>
+                        </div>
+                        <div class="pred-vs">
+                            <span class="pred-competition">Coppa Italia</span>
+                            <span class="pred-vs-text">vs</span>
+                            <span class="pred-date">Tue 27 Jan, 21:00</span>
+                        </div>
+                        <div class="pred-team">
+                            <div class="pred-badge como-badge">CO</div>
+                            <span class="pred-team-name">Como</span>
+                        </div>
+                    </div>
+                    <div class="pred-countdown" id="pred-countdown">
+                        <span id="countdown-text">Loading...</span>
+                    </div>
+                </div>
+
+                <!-- Sync Status Bar -->
+                <div class="sync-bar">
+                    <span id="pred-sync-status" class="sync-status">Synced</span>
+                    <button id="refresh-predictions" class="refresh-btn">Refresh</button>
+                </div>
+
+                <!-- League Table Card -->
+                <div class="card pred-league-card">
+                    <div class="card-header pred-league-header">
+                        <span class="card-label">Leaderboard</span>
+                        <span class="pred-max-pts">/ 50 pts</span>
+                    </div>
+                    <div id="pred-league-table" class="pred-league-table">
+                        <p class="no-predictions">No results entered yet</p>
+                    </div>
+                </div>
+
+                <!-- Prediction Form (shown before kickoff) -->
+                <div id="pred-form-container" class="card pred-form-card">
+                    <div class="card-header">
+                        <span class="card-label">Your Predictions</span>
+                    </div>
+                    <form id="prediction-form" class="pred-form">
+                        <div class="pred-form-group">
+                            <label class="pred-label">1. Final Score</label>
+                            <div class="pred-score-inputs">
+                                <div class="pred-score-team">
+                                    <span>Fiorentina</span>
+                                    <input type="number" id="pred-home" min="0" max="20" placeholder="0" required>
+                                </div>
+                                <span class="pred-score-dash">-</span>
+                                <div class="pred-score-team">
+                                    <span>Como</span>
+                                    <input type="number" id="pred-away" min="0" max="20" placeholder="0" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pred-form-group">
+                            <label class="pred-label" for="pred-first-goal-min">2. First Goal Minute</label>
+                            <input type="number" id="pred-first-goal-min" min="1" max="120" placeholder="e.g. 18" required>
+                        </div>
+
+                        <div class="pred-form-group">
+                            <label class="pred-label" for="pred-total-goals">3. Total Goals in Match</label>
+                            <input type="number" id="pred-total-goals" min="0" max="20" placeholder="e.g. 3" required>
+                        </div>
+
+                        <div class="pred-form-group">
+                            <label class="pred-label">4. Both Teams to Score?</label>
+                            <div class="pred-toggle-group">
+                                <label class="pred-toggle">
+                                    <input type="radio" name="pred-btts" value="yes" required>
+                                    <span>Yes</span>
+                                </label>
+                                <label class="pred-toggle">
+                                    <input type="radio" name="pred-btts" value="no">
+                                    <span>No</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="pred-form-group">
+                            <label class="pred-label" for="pred-cards">5. Number of Cards (Yellow + Red)</label>
+                            <input type="number" id="pred-cards" min="0" max="20" placeholder="e.g. 5" required>
+                        </div>
+
+                        <div class="pred-form-group">
+                            <label class="pred-label" for="pred-motm">6. Man of the Match</label>
+                            <input type="text" id="pred-motm" placeholder="e.g. Moise Kean" required>
+                        </div>
+
+                        <div class="pred-form-group">
+                            <label class="pred-label" for="pred-first-yellow-min">7. First Yellow Card Minute</label>
+                            <input type="number" id="pred-first-yellow-min" min="1" max="120" placeholder="e.g. 12" required>
+                        </div>
+
+                        <div class="pred-form-group">
+                            <label class="pred-label" for="pred-first-scorer">8. First Goalscorer</label>
+                            <input type="text" id="pred-first-scorer" placeholder="e.g. Moise Kean" required>
+                        </div>
+
+                        <button type="submit" class="pred-submit-btn">Submit Predictions</button>
+                    </form>
+                </div>
+
+                <!-- All Predictions Grid (shown after kickoff) -->
+                <div id="pred-all-container" class="card pred-all-card" style="display:none;">
+                    <div class="card-header">
+                        <span class="card-label">All Predictions</span>
+                    </div>
+                    <div id="pred-all-grid" class="pred-all-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Results Entry Form (shown after match) -->
+                <div id="pred-results-container" class="card pred-results-card">
+                    <div class="card-header pred-results-header">
+                        <span class="card-label">Enter Match Results</span>
+                    </div>
+                    <form id="results-form" class="pred-form">
+                        <div class="pred-form-group">
+                            <label class="pred-label">Final Score</label>
+                            <div class="pred-score-inputs">
+                                <div class="pred-score-team">
+                                    <span>Fiorentina</span>
+                                    <input type="number" id="res-home" min="0" max="20" placeholder="-">
+                                </div>
+                                <span class="pred-score-dash">-</span>
+                                <div class="pred-score-team">
+                                    <span>Como</span>
+                                    <input type="number" id="res-away" min="0" max="20" placeholder="-">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pred-form-group">
+                            <label class="pred-label" for="res-first-goal-min">First Goal Minute</label>
+                            <input type="number" id="res-first-goal-min" min="1" max="120" placeholder="-">
+                        </div>
+
+                        <div class="pred-form-group">
+                            <label class="pred-label" for="res-total-goals">Total Goals</label>
+                            <input type="number" id="res-total-goals" min="0" max="20" placeholder="-">
+                        </div>
+
+                        <div class="pred-form-group">
+                            <label class="pred-label">Both Teams Scored?</label>
+                            <div class="pred-toggle-group">
+                                <label class="pred-toggle">
+                                    <input type="radio" name="res-btts" value="yes">
+                                    <span>Yes</span>
+                                </label>
+                                <label class="pred-toggle">
+                                    <input type="radio" name="res-btts" value="no">
+                                    <span>No</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="pred-form-group">
+                            <label class="pred-label" for="res-cards">Number of Cards</label>
+                            <input type="number" id="res-cards" min="0" max="20" placeholder="-">
+                        </div>
+
+                        <div class="pred-form-group">
+                            <label class="pred-label" for="res-motm">Man of the Match</label>
+                            <input type="text" id="res-motm" placeholder="-">
+                        </div>
+
+                        <div class="pred-form-group">
+                            <label class="pred-label" for="res-first-yellow-min">First Yellow Minute</label>
+                            <input type="number" id="res-first-yellow-min" min="1" max="120" placeholder="-">
+                        </div>
+
+                        <div class="pred-form-group">
+                            <label class="pred-label" for="res-first-scorer">First Goalscorer</label>
+                            <input type="text" id="res-first-scorer" placeholder="-">
+                        </div>
+
+                        <button type="submit" class="pred-results-btn">Save Results</button>
+                    </form>
                 </div>
             </section>
 

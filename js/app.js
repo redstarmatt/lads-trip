@@ -127,6 +127,9 @@ function selectLad(lad) {
     // Update costs display for this lad
     updateCostsDisplay();
 
+    // Update predictions display for this lad
+    updatePredictionsDisplay();
+
     // Show main screen
     if (selectScreenEl) selectScreenEl.classList.remove('active');
     if (mainScreenEl) mainScreenEl.classList.add('active');
@@ -834,6 +837,572 @@ document.addEventListener('DOMContentLoaded', () => {
             if (Date.now() - lastSyncTime > 10000) {
                 await fetchExpenses();
                 updateCostsDisplay();
+            }
+        });
+    }
+});
+
+// ============================================
+// PREDICTIONS GAME - Fiorentina vs Como
+// ============================================
+
+const PREDICTIONS_KEY = 'lads-predictions';
+const PRED_JSONBLOB_ID = '019bffc0-5996-7c87-8b2a-76cbafc7350f';
+const PRED_JSONBLOB_BASE = `https://jsonblob.com/api/jsonBlob/${PRED_JSONBLOB_ID}`;
+const PRED_JSONBLOB_URL = `https://corsproxy.io/?${encodeURIComponent(PRED_JSONBLOB_BASE)}`;
+const KICKOFF_UTC = new Date('2026-01-27T20:00:00Z'); // 21:00 CET = 20:00 UTC
+
+let predictionsCache = { predictions: {}, results: {} };
+let predLastSyncTime = 0;
+let countdownInterval = null;
+
+// -- Sync --
+
+async function fetchPredictions() {
+    showPredSyncStatus('syncing');
+    try {
+        const response = await fetch(PRED_JSONBLOB_URL);
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+
+        const cloudData = await response.json();
+        const local = JSON.parse(localStorage.getItem(PREDICTIONS_KEY) || '{}');
+
+        // Merge: cloud wins for other lads, local wins for current lad
+        const merged = {
+            predictions: { ...(cloudData.predictions || {}), ...(local.predictions || {}) },
+            results: cloudData.results || local.results || {}
+        };
+        // Cloud predictions override for non-current lad
+        if (cloudData.predictions) {
+            Object.keys(cloudData.predictions).forEach(lad => {
+                if (lad !== currentLad) {
+                    merged.predictions[lad] = cloudData.predictions[lad];
+                }
+            });
+        }
+
+        predictionsCache = merged;
+        localStorage.setItem(PREDICTIONS_KEY, JSON.stringify(predictionsCache));
+
+        // Push local data to cloud if we have local predictions not in cloud
+        const localPreds = local.predictions || {};
+        const cloudPreds = cloudData.predictions || {};
+        const hasLocalOnly = Object.keys(localPreds).some(k => !cloudPreds[k] || localPreds[k].submittedAt !== cloudPreds[k].submittedAt);
+        if (hasLocalOnly) {
+            await syncPredictionsToCloud();
+        }
+
+        predLastSyncTime = Date.now();
+        showPredSyncStatus('synced');
+    } catch (e) {
+        console.error('Predictions fetch failed:', e);
+        const local = JSON.parse(localStorage.getItem(PREDICTIONS_KEY) || '{}');
+        predictionsCache = {
+            predictions: local.predictions || {},
+            results: local.results || {}
+        };
+        showPredSyncStatus('offline');
+    }
+    return predictionsCache;
+}
+
+async function syncPredictionsToCloud() {
+    try {
+        const response = await fetch(PRED_JSONBLOB_URL, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(predictionsCache)
+        });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        showPredSyncStatus('synced');
+        return true;
+    } catch (e) {
+        console.error('Predictions save failed:', e);
+        showPredSyncStatus('offline');
+        return false;
+    }
+}
+
+function showPredSyncStatus(status) {
+    const el = document.getElementById('pred-sync-status');
+    if (!el) return;
+    el.className = 'sync-status ' + status;
+    el.textContent = status === 'syncing' ? 'Syncing...' : status === 'synced' ? 'Synced' : 'Offline';
+}
+
+// -- Scoring --
+
+function scoreFinalScore(pred, result) {
+    if (!pred || !result || result.home === null || result.away === null) return 0;
+    const pH = pred.home, pA = pred.away;
+    const rH = result.home, rA = result.away;
+    // Exact
+    if (pH === rH && pA === rA) return 10;
+    // Result (W/D/L)
+    const predResult = Math.sign(pH - pA);
+    const realResult = Math.sign(rH - rA);
+    if (predResult === realResult) {
+        // Right result + close (total goals off by 1)
+        const predTotal = pH + pA;
+        const realTotal = rH + rA;
+        if (Math.abs(predTotal - realTotal) <= 1) return 5;
+        return 3;
+    }
+    return 0;
+}
+
+function scoreMinute(pred, result, maxPts) {
+    if (pred === null || pred === undefined || result === null || result === undefined) return 0;
+    const diff = Math.abs(pred - result);
+    if (diff === 0) return maxPts;
+    if (diff <= 3) return 4;
+    if (diff <= 5) return 3;
+    if (diff <= 10) return 1;
+    return 0;
+}
+
+function scoreExact(pred, result, maxPts, tolerances) {
+    if (pred === null || pred === undefined || result === null || result === undefined) return 0;
+    const diff = Math.abs(pred - result);
+    if (diff === 0) return maxPts;
+    for (const [threshold, pts] of tolerances) {
+        if (diff <= threshold) return pts;
+    }
+    return 0;
+}
+
+function scoreBTTS(pred, result) {
+    if (!pred || !result) return 0;
+    return pred === result ? 4 : 0;
+}
+
+function scoreNameMatch(pred, result, maxPts) {
+    if (!pred || !result) return 0;
+    const pNorm = pred.trim().toLowerCase();
+    const rNorm = result.trim().toLowerCase();
+    if (pNorm === rNorm) return maxPts;
+    // Surname match: last word of each
+    const pSurname = pNorm.split(/\s+/).pop();
+    const rSurname = rNorm.split(/\s+/).pop();
+    if (pSurname === rSurname && pSurname.length > 1) return 4;
+    return 0;
+}
+
+function calculatePredictionScore(prediction, results) {
+    if (!prediction || !results) return 0;
+    let total = 0;
+    // 1. Final Score (max 10)
+    total += scoreFinalScore(prediction.finalScore, results.finalScore);
+    // 2. First Goal Minute (max 6)
+    total += scoreMinute(prediction.firstGoalMinute, results.firstGoalMinute, 6);
+    // 3. Total Goals (max 6)
+    total += scoreExact(prediction.totalGoals, results.totalGoals, 6, [[1, 3], [2, 1]]);
+    // 4. Both Teams Score (max 4)
+    total += scoreBTTS(prediction.bothTeamsToScore, results.bothTeamsToScore);
+    // 5. Number of Cards (max 6)
+    total += scoreExact(prediction.numberOfCards, results.numberOfCards, 6, [[1, 4], [2, 2], [3, 1]]);
+    // 6. Man of the Match (max 6)
+    total += scoreNameMatch(prediction.manOfTheMatch, results.manOfTheMatch, 6);
+    // 7. First Yellow Minute (max 6)
+    total += scoreMinute(prediction.firstYellowMinute, results.firstYellowMinute, 6);
+    // 8. First Goalscorer (max 6)
+    total += scoreNameMatch(prediction.firstGoalscorer, results.firstGoalscorer, 6);
+    return total;
+}
+
+function getDetailedScores(prediction, results) {
+    if (!prediction || !results) return [];
+    return [
+        { label: 'Final Score', pts: scoreFinalScore(prediction.finalScore, results.finalScore), max: 10 },
+        { label: '1st Goal Min', pts: scoreMinute(prediction.firstGoalMinute, results.firstGoalMinute, 6), max: 6 },
+        { label: 'Total Goals', pts: scoreExact(prediction.totalGoals, results.totalGoals, 6, [[1, 3], [2, 1]]), max: 6 },
+        { label: 'BTTS', pts: scoreBTTS(prediction.bothTeamsToScore, results.bothTeamsToScore), max: 4 },
+        { label: 'Cards', pts: scoreExact(prediction.numberOfCards, results.numberOfCards, 6, [[1, 4], [2, 2], [3, 1]]), max: 6 },
+        { label: 'MOTM', pts: scoreNameMatch(prediction.manOfTheMatch, results.manOfTheMatch, 6), max: 6 },
+        { label: '1st Yellow Min', pts: scoreMinute(prediction.firstYellowMinute, results.firstYellowMinute, 6), max: 6 },
+        { label: '1st Scorer', pts: scoreNameMatch(prediction.firstGoalscorer, results.firstGoalscorer, 6), max: 6 }
+    ];
+}
+
+// -- Countdown --
+
+function isBeforeKickoff() {
+    return new Date() < KICKOFF_UTC;
+}
+
+function updateCountdown() {
+    const el = document.getElementById('countdown-text');
+    if (!el) return;
+
+    const now = new Date();
+    const diff = KICKOFF_UTC - now;
+
+    if (diff <= 0) {
+        // After kickoff
+        const hoursSinceKO = (now - KICKOFF_UTC) / (1000 * 60 * 60);
+        if (hoursSinceKO < 3) {
+            el.textContent = 'MATCH IN PROGRESS';
+            el.className = 'countdown-live';
+        } else {
+            el.textContent = 'FULL TIME';
+            el.className = 'countdown-locked';
+        }
+        return;
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+    let text = '';
+    if (days > 0) text += `${days}d `;
+    text += `${hours}h ${mins}m ${secs}s`;
+    el.textContent = 'Predictions lock in: ' + text;
+    el.className = 'countdown-active';
+}
+
+function startCountdown() {
+    updateCountdown();
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = setInterval(updateCountdown, 1000);
+}
+
+// -- Rendering --
+
+function renderLeagueTable() {
+    const container = document.getElementById('pred-league-table');
+    if (!container) return;
+
+    const results = predictionsCache.results || {};
+    const predictions = predictionsCache.predictions || {};
+    const hasResults = results.finalScore && results.finalScore.home !== null;
+
+    if (!hasResults) {
+        const ladCount = Object.keys(predictions).length;
+        if (ladCount === 0) {
+            container.innerHTML = '<p class="no-predictions">No predictions submitted yet</p>';
+        } else {
+            container.innerHTML = '<p class="no-predictions">' + ladCount + ' prediction' + (ladCount !== 1 ? 's' : '') + ' submitted - awaiting results</p>';
+        }
+        return;
+    }
+
+    // Calculate scores
+    const scores = allLads
+        .filter(lad => predictions[lad])
+        .map(lad => ({
+            lad,
+            name: ladsData[lad]?.name || lad,
+            points: calculatePredictionScore(predictions[lad], results)
+        }))
+        .sort((a, b) => b.points - a.points);
+
+    if (scores.length === 0) {
+        container.innerHTML = '<p class="no-predictions">No predictions to score</p>';
+        return;
+    }
+
+    const medals = ['gold', 'silver', 'bronze'];
+    const medalIcons = ['1st', '2nd', '3rd'];
+
+    container.innerHTML = scores.map((s, i) => {
+        const posClass = i < 3 ? medals[i] : '';
+        const posText = i < 3 ? medalIcons[i] : (i + 1);
+        return `
+            <div class="pred-league-row">
+                <span class="pred-league-pos ${posClass}">${posText}</span>
+                <span class="pred-league-name">${s.name}</span>
+                <span class="pred-league-pts">${s.points} pts</span>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderPredictionForm() {
+    const formContainer = document.getElementById('pred-form-container');
+    const allContainer = document.getElementById('pred-all-container');
+    if (!formContainer) return;
+
+    const beforeKO = isBeforeKickoff();
+    const myPrediction = predictionsCache.predictions?.[currentLad];
+
+    if (beforeKO) {
+        // Show form or submitted message
+        formContainer.style.display = '';
+        if (allContainer) allContainer.style.display = 'none';
+
+        if (myPrediction) {
+            // Already submitted - show confirmation
+            const form = document.getElementById('prediction-form');
+            if (form) {
+                form.innerHTML = `
+                    <div class="pred-submitted-msg">
+                        <span class="check-icon">&#9989;</span>
+                        <div class="msg-text">Predictions Submitted!</div>
+                        <div class="msg-sub">Locked in at ${new Date(myPrediction.submittedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                `;
+            }
+        } else {
+            // Ensure the form is fresh (re-read from HTML if needed)
+            // Form already exists in HTML
+        }
+    } else {
+        // After kickoff: hide form, show all predictions
+        formContainer.style.display = 'none';
+        if (allContainer) {
+            allContainer.style.display = '';
+            renderAllPredictions();
+        }
+    }
+}
+
+function renderAllPredictions() {
+    const container = document.getElementById('pred-all-grid');
+    if (!container) return;
+
+    const predictions = predictionsCache.predictions || {};
+    const results = predictionsCache.results || {};
+    const hasResults = results.finalScore && results.finalScore.home !== null;
+    const ladsWithPreds = allLads.filter(l => predictions[l]);
+
+    if (ladsWithPreds.length === 0) {
+        container.innerHTML = '<p class="no-predictions">No predictions were submitted</p>';
+        return;
+    }
+
+    const markets = [
+        { key: 'finalScore', label: 'Score', fmt: v => v ? `${v.home}-${v.away}` : '-' },
+        { key: 'firstGoalMinute', label: '1st Goal Min', fmt: v => v !== null && v !== undefined ? v + "'" : '-' },
+        { key: 'totalGoals', label: 'Total Goals', fmt: v => v !== null && v !== undefined ? v : '-' },
+        { key: 'bothTeamsToScore', label: 'BTTS', fmt: v => v ? (v.charAt(0).toUpperCase() + v.slice(1)) : '-' },
+        { key: 'numberOfCards', label: 'Cards', fmt: v => v !== null && v !== undefined ? v : '-' },
+        { key: 'manOfTheMatch', label: 'MOTM', fmt: v => v || '-' },
+        { key: 'firstYellowMinute', label: '1st Yellow', fmt: v => v !== null && v !== undefined ? v + "'" : '-' },
+        { key: 'firstGoalscorer', label: '1st Scorer', fmt: v => v || '-' }
+    ];
+
+    let html = '<table class="pred-all-table">';
+    html += '<thead><tr><th>Market</th>';
+    ladsWithPreds.forEach(l => {
+        html += `<th>${ladsData[l]?.name || l}</th>`;
+    });
+    if (hasResults) html += '<th>Result</th>';
+    html += '</tr></thead><tbody>';
+
+    markets.forEach(m => {
+        html += '<tr>';
+        html += `<td>${m.label}</td>`;
+        ladsWithPreds.forEach(l => {
+            const val = predictions[l]?.[m.key];
+            html += `<td>${m.fmt(val)}</td>`;
+        });
+        if (hasResults) {
+            html += `<td>${m.fmt(results[m.key])}</td>`;
+        }
+        html += '</tr>';
+    });
+
+    // Points row if results exist
+    if (hasResults) {
+        html += '<tr class="pred-result-row"><td>Points</td>';
+        ladsWithPreds.forEach(l => {
+            const pts = calculatePredictionScore(predictions[l], results);
+            html += `<td>${pts}</td>`;
+        });
+        html += '<td></td></tr>';
+    }
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function renderResultsForm() {
+    const container = document.getElementById('pred-results-container');
+    if (!container) return;
+
+    const results = predictionsCache.results || {};
+
+    // Pre-fill results form if results exist
+    if (results.finalScore && results.finalScore.home !== null) {
+        const fields = [
+            ['res-home', results.finalScore?.home],
+            ['res-away', results.finalScore?.away],
+            ['res-first-goal-min', results.firstGoalMinute],
+            ['res-total-goals', results.totalGoals],
+            ['res-cards', results.numberOfCards],
+            ['res-motm', results.manOfTheMatch],
+            ['res-first-yellow-min', results.firstYellowMinute],
+            ['res-first-scorer', results.firstGoalscorer]
+        ];
+        fields.forEach(([id, val]) => {
+            const el = document.getElementById(id);
+            if (el && val !== null && val !== undefined) el.value = val;
+        });
+        // BTTS radio
+        if (results.bothTeamsToScore) {
+            const radio = document.querySelector(`input[name="res-btts"][value="${results.bothTeamsToScore}"]`);
+            if (radio) radio.checked = true;
+        }
+    }
+}
+
+function updatePredictionsDisplay() {
+    renderLeagueTable();
+    renderPredictionForm();
+    renderResultsForm();
+}
+
+// -- Form Handling --
+
+function initPredictionForm() {
+    const form = document.getElementById('prediction-form');
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!currentLad) {
+            alert('Please select who you are first');
+            return;
+        }
+        if (!isBeforeKickoff()) {
+            alert('Predictions are locked - match has started!');
+            return;
+        }
+
+        const homeVal = document.getElementById('pred-home')?.value;
+        const awayVal = document.getElementById('pred-away')?.value;
+        const firstGoalMin = document.getElementById('pred-first-goal-min')?.value;
+        const totalGoals = document.getElementById('pred-total-goals')?.value;
+        const btts = document.querySelector('input[name="pred-btts"]:checked')?.value;
+        const cards = document.getElementById('pred-cards')?.value;
+        const motm = document.getElementById('pred-motm')?.value;
+        const firstYellowMin = document.getElementById('pred-first-yellow-min')?.value;
+        const firstScorer = document.getElementById('pred-first-scorer')?.value;
+
+        if (!homeVal || !awayVal || !firstGoalMin || !totalGoals || !btts || !cards || !motm || !firstYellowMin || !firstScorer) {
+            alert('Please fill in all predictions');
+            return;
+        }
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+
+        const prediction = {
+            finalScore: { home: parseInt(homeVal), away: parseInt(awayVal) },
+            firstGoalMinute: parseInt(firstGoalMin),
+            totalGoals: parseInt(totalGoals),
+            bothTeamsToScore: btts,
+            numberOfCards: parseInt(cards),
+            manOfTheMatch: motm.trim(),
+            firstYellowMinute: parseInt(firstYellowMin),
+            firstGoalscorer: firstScorer.trim(),
+            submittedAt: new Date().toISOString()
+        };
+
+        predictionsCache.predictions[currentLad] = prediction;
+        localStorage.setItem(PREDICTIONS_KEY, JSON.stringify(predictionsCache));
+        await syncPredictionsToCloud();
+
+        updatePredictionsDisplay();
+    });
+}
+
+function initResultsForm() {
+    const form = document.getElementById('results-form');
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const homeVal = document.getElementById('res-home')?.value;
+        const awayVal = document.getElementById('res-away')?.value;
+
+        // Allow partial results, but need at least the score
+        if (!homeVal || !awayVal) {
+            alert('Please enter at least the final score');
+            return;
+        }
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+
+        const firstGoalMin = document.getElementById('res-first-goal-min')?.value;
+        const totalGoals = document.getElementById('res-total-goals')?.value;
+        const btts = document.querySelector('input[name="res-btts"]:checked')?.value;
+        const cards = document.getElementById('res-cards')?.value;
+        const motm = document.getElementById('res-motm')?.value;
+        const firstYellowMin = document.getElementById('res-first-yellow-min')?.value;
+        const firstScorer = document.getElementById('res-first-scorer')?.value;
+
+        predictionsCache.results = {
+            finalScore: { home: parseInt(homeVal), away: parseInt(awayVal) },
+            firstGoalMinute: firstGoalMin ? parseInt(firstGoalMin) : null,
+            totalGoals: totalGoals ? parseInt(totalGoals) : null,
+            bothTeamsToScore: btts || null,
+            numberOfCards: cards ? parseInt(cards) : null,
+            manOfTheMatch: motm ? motm.trim() : null,
+            firstYellowMinute: firstYellowMin ? parseInt(firstYellowMin) : null,
+            firstGoalscorer: firstScorer ? firstScorer.trim() : null
+        };
+
+        localStorage.setItem(PREDICTIONS_KEY, JSON.stringify(predictionsCache));
+        await syncPredictionsToCloud();
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Save Results';
+
+        updatePredictionsDisplay();
+    });
+}
+
+// -- Init --
+
+function initPredictions() {
+    initPredictionForm();
+    initResultsForm();
+    startCountdown();
+
+    // Refresh button
+    const refreshBtn = document.getElementById('refresh-predictions');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+            refreshBtn.disabled = true;
+            await fetchPredictions();
+            updatePredictionsDisplay();
+            refreshBtn.disabled = false;
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    initPredictions();
+    // Load from local cache first
+    const stored = localStorage.getItem(PREDICTIONS_KEY);
+    if (stored) {
+        try {
+            predictionsCache = JSON.parse(stored);
+        } catch (e) {
+            predictionsCache = { predictions: {}, results: {} };
+        }
+    }
+    updatePredictionsDisplay();
+    // Then fetch latest
+    await fetchPredictions();
+    updatePredictionsDisplay();
+});
+
+// Auto-refresh when predictions tab becomes visible
+document.addEventListener('DOMContentLoaded', () => {
+    const predTab = document.querySelector('[data-tab="predictions"]');
+    if (predTab) {
+        predTab.addEventListener('click', async () => {
+            if (Date.now() - predLastSyncTime > 10000) {
+                await fetchPredictions();
+                updatePredictionsDisplay();
             }
         });
     }
