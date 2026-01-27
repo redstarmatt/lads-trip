@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lads-trip-v30';
+const CACHE_NAME = 'lads-trip-v31';
 const urlsToCache = [
     './',
     './index.html',
@@ -47,7 +47,7 @@ self.addEventListener('fetch', event => {
     const url = event.request.url;
 
     // NEVER cache or intercept API calls - always go to network
-    if (url.includes('jsonblob.com') || url.includes('corsproxy.io')) {
+    if (url.includes('jsonblob.com') || url.includes('corsproxy.io') || url.includes('open-meteo.com')) {
         event.respondWith(fetch(event.request));
         return;
     }

@@ -389,6 +389,86 @@ function setupPinchZoom(wrapper, canvas) {
 }
 
 // ============================================
+// WEATHER FORECAST
+// ============================================
+
+const WEATHER_CITIES = [
+    { name: 'Verona', lat: 45.4384, lon: 10.9916 },
+    { name: 'Florence', lat: 43.7696, lon: 11.2558 }
+];
+
+const WMO_CODES = {
+    0: { icon: '☀️', desc: 'Clear sky' },
+    1: { icon: '🌤️', desc: 'Mainly clear' },
+    2: { icon: '⛅', desc: 'Partly cloudy' },
+    3: { icon: '☁️', desc: 'Overcast' },
+    45: { icon: '🌫️', desc: 'Foggy' },
+    48: { icon: '🌫️', desc: 'Icy fog' },
+    51: { icon: '🌦️', desc: 'Light drizzle' },
+    53: { icon: '🌦️', desc: 'Drizzle' },
+    55: { icon: '🌧️', desc: 'Heavy drizzle' },
+    61: { icon: '🌧️', desc: 'Light rain' },
+    63: { icon: '🌧️', desc: 'Rain' },
+    65: { icon: '🌧️', desc: 'Heavy rain' },
+    71: { icon: '🌨️', desc: 'Light snow' },
+    73: { icon: '🌨️', desc: 'Snow' },
+    75: { icon: '❄️', desc: 'Heavy snow' },
+    80: { icon: '🌦️', desc: 'Rain showers' },
+    81: { icon: '🌧️', desc: 'Rain showers' },
+    82: { icon: '⛈️', desc: 'Heavy showers' },
+    95: { icon: '⛈️', desc: 'Thunderstorm' },
+    96: { icon: '⛈️', desc: 'Thunderstorm + hail' },
+    99: { icon: '⛈️', desc: 'Thunderstorm + hail' }
+};
+
+function getWeatherInfo(code) {
+    return WMO_CODES[code] || { icon: '🌡️', desc: 'Unknown' };
+}
+
+async function loadWeather() {
+    const container = document.getElementById('weather-content');
+    if (!container) return;
+
+    try {
+        let html = '';
+        for (const city of WEATHER_CITIES) {
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=5&timezone=Europe/Rome`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Weather fetch failed');
+            const data = await response.json();
+
+            html += `<div class="weather-city-section"><h4 class="weather-city-title">${city.name}</h4><div class="weather-grid">`;
+
+            for (let i = 0; i < data.daily.time.length; i++) {
+                const date = new Date(data.daily.time[i] + 'T12:00:00');
+                const dayStr = date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
+                const weather = getWeatherInfo(data.daily.weather_code[i]);
+                const min = Math.round(data.daily.temperature_2m_min[i]);
+                const max = Math.round(data.daily.temperature_2m_max[i]);
+
+                html += `
+                    <div class="weather-day">
+                        <span class="weather-date">${dayStr}</span>
+                        <span class="weather-icon">${weather.icon}</span>
+                        <span class="weather-temp-range">${min}° / ${max}°</span>
+                        <span class="weather-desc">${weather.desc}</span>
+                    </div>`;
+            }
+
+            html += `</div></div>`;
+        }
+
+        html += `<p class="weather-note">Live forecast from Open-Meteo</p>`;
+        container.innerHTML = html;
+    } catch (e) {
+        console.error('Weather error:', e);
+        container.innerHTML = '<p class="weather-note">Could not load weather</p>';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => loadWeather());
+
+// ============================================
 // COST SPLITTING FUNCTIONALITY
 // ============================================
 
