@@ -1784,7 +1784,7 @@ const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOU
 
 let photosCache = [];
 let photosLastSyncTime = 0;
-let selectedPhotoFile = null;
+let selectedPhotoFiles = [];
 
 // -- Sync --
 
@@ -1887,52 +1887,66 @@ async function uploadToCloudinary(file) {
 }
 
 async function handlePhotoUpload() {
-    if (!currentLad || !selectedPhotoFile) return;
+    if (!currentLad || selectedPhotoFiles.length === 0) return;
 
     const uploadBtn = document.getElementById('photo-upload-btn');
+    const caption = document.getElementById('photo-caption')?.value.trim() || '';
     uploadBtn.disabled = true;
-    uploadBtn.textContent = 'Uploading...';
 
-    try {
-        const result = await uploadToCloudinary(selectedPhotoFile);
+    const total = selectedPhotoFiles.length;
+    let uploaded = 0;
+    let failed = 0;
 
-        const photo = {
-            id: generateUniqueId(),
-            url: result.url,
-            thumbnailUrl: result.thumbnailUrl,
-            publicId: result.publicId,
-            uploader: currentLad,
-            caption: document.getElementById('photo-caption')?.value.trim() || '',
-            timestamp: new Date().toISOString()
-        };
+    for (const file of selectedPhotoFiles) {
+        uploadBtn.textContent = `Uploading ${uploaded + 1}/${total}...`;
+        try {
+            const result = await uploadToCloudinary(file);
 
-        photosCache.unshift(photo);
-        localStorage.setItem(PHOTOS_KEY, JSON.stringify(photosCache));
-        await syncPhotosToCloud();
+            const photo = {
+                id: generateUniqueId(),
+                url: result.url,
+                thumbnailUrl: result.thumbnailUrl,
+                publicId: result.publicId,
+                uploader: currentLad,
+                caption: total === 1 ? caption : '',
+                timestamp: new Date().toISOString()
+            };
 
-        clearPhotoPreview();
-        renderPhotosGrid();
-    } catch (e) {
-        console.error('Photo upload error:', e);
-        alert('Upload failed. Please try again.');
-    } finally {
-        uploadBtn.disabled = false;
-        uploadBtn.textContent = 'Upload';
-        const progressBar = document.getElementById('photo-progress-bar');
-        if (progressBar) progressBar.style.display = 'none';
-        const progressFill = document.getElementById('photo-progress-fill');
-        if (progressFill) progressFill.style.width = '0%';
+            photosCache.unshift(photo);
+            uploaded++;
+        } catch (e) {
+            console.error('Photo upload error:', e);
+            failed++;
+        }
     }
+
+    localStorage.setItem(PHOTOS_KEY, JSON.stringify(photosCache));
+    await syncPhotosToCloud();
+
+    clearPhotoPreview();
+    renderPhotosGrid();
+
+    if (failed > 0) {
+        alert(`${uploaded} uploaded, ${failed} failed.`);
+    }
+
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = 'Upload';
+    const progressBar = document.getElementById('photo-progress-bar');
+    if (progressBar) progressBar.style.display = 'none';
+    const progressFill = document.getElementById('photo-progress-fill');
+    if (progressFill) progressFill.style.width = '0%';
 }
 
 // -- File Picker --
 
 function handlePhotoFileSelect(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
 
-    selectedPhotoFile = file;
+    selectedPhotoFiles = files;
 
+    // Show preview of first image
     const reader = new FileReader();
     reader.onload = (ev) => {
         const previewContainer = document.getElementById('photo-preview-container');
@@ -1941,13 +1955,16 @@ function handlePhotoFileSelect(e) {
         if (previewContainer) previewContainer.style.display = 'block';
 
         const uploadBtn = document.getElementById('photo-upload-btn');
-        if (uploadBtn) uploadBtn.disabled = false;
+        if (uploadBtn) {
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = files.length > 1 ? `Upload ${files.length} Photos` : 'Upload';
+        }
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(files[0]);
 }
 
 function clearPhotoPreview() {
-    selectedPhotoFile = null;
+    selectedPhotoFiles = [];
     const previewContainer = document.getElementById('photo-preview-container');
     const previewImg = document.getElementById('photo-preview-img');
     const fileInput = document.getElementById('photo-file-input');
