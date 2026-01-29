@@ -460,9 +460,8 @@ document.addEventListener('DOMContentLoaded', () => loadWeather());
 
 const EXPENSES_KEY = 'lads-expenses';
 const JSONBLOB_ID = '019bfac8-1b6b-759d-a533-8c5644418d84';
-const JSONBLOB_BASE = `https://jsonblob.com/api/jsonBlob/${JSONBLOB_ID}`;
-// Use CORS proxy for browser requests
-const JSONBLOB_URL = `https://corsproxy.io/?${encodeURIComponent(JSONBLOB_BASE)}`;
+const CORS_PROXY = 'https://proxy-eight-ivory-23.vercel.app/api/blob';
+const JSONBLOB_URL = `${CORS_PROXY}?id=${JSONBLOB_ID}`;
 const allLads = ['matt', 'ken', 'chris', 'andy', 'mark'];
 
 let expensesCache = [];
@@ -831,8 +830,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const PREDICTIONS_KEY = 'lads-predictions';
 const PRED_JSONBLOB_ID = '019bffc0-5996-7c87-8b2a-76cbafc7350f';
-const PRED_JSONBLOB_BASE = `https://jsonblob.com/api/jsonBlob/${PRED_JSONBLOB_ID}`;
-const PRED_JSONBLOB_URL = `https://corsproxy.io/?${encodeURIComponent(PRED_JSONBLOB_BASE)}`;
+const PRED_JSONBLOB_URL = `${CORS_PROXY}?id=${PRED_JSONBLOB_ID}`;
 const KICKOFF_UTC = new Date('2026-01-27T20:00:00Z'); // 21:00 CET = 20:00 UTC
 
 let predictionsCache = { predictions: {}, results: {} };
@@ -1776,8 +1774,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const PHOTOS_KEY = 'lads-photos';
 const PHOTOS_JSONBLOB_ID = '019c0af4-c852-7946-9c93-bb84c7c5f786';
-const PHOTOS_JSONBLOB_BASE = `https://jsonblob.com/api/jsonBlob/${PHOTOS_JSONBLOB_ID}`;
-const PHOTOS_JSONBLOB_URL = `https://corsproxy.io/?${encodeURIComponent(PHOTOS_JSONBLOB_BASE)}`;
+const PHOTOS_JSONBLOB_URL = `${CORS_PROXY}?id=${PHOTOS_JSONBLOB_ID}`;
 const CLOUDINARY_CLOUD_NAME = 'dpokq9eix';
 const CLOUDINARY_UPLOAD_PRESET = 'ladsladslads';
 const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
