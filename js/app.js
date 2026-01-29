@@ -459,7 +459,7 @@ document.addEventListener('DOMContentLoaded', () => loadWeather());
 // ============================================
 
 const EXPENSES_KEY = 'lads-expenses';
-const JSONBLOB_ID = '019bfac8-1b6b-759d-a533-8c5644418d84';
+const JSONBLOB_ID = '019c0b91-a4f8-774f-a063-c2cd4856d730';
 const CORS_PROXY = 'https://proxy-eight-ivory-23.vercel.app/api/blob';
 const JSONBLOB_URL = `${CORS_PROXY}?id=${JSONBLOB_ID}`;
 const allLads = ['matt', 'ken', 'chris', 'andy', 'mark'];
@@ -829,7 +829,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================
 
 const PREDICTIONS_KEY = 'lads-predictions';
-const PRED_JSONBLOB_ID = '019bffc0-5996-7c87-8b2a-76cbafc7350f';
+const PRED_JSONBLOB_ID = '019c0b92-684f-7357-81f7-d6e318508df3';
 const PRED_JSONBLOB_URL = `${CORS_PROXY}?id=${PRED_JSONBLOB_ID}`;
 const KICKOFF_UTC = new Date('2026-01-27T20:00:00Z'); // 21:00 CET = 20:00 UTC
 
