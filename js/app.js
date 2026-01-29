@@ -397,7 +397,9 @@ function setupPinchZoom(wrapper, canvas) {
             currentScale = 1;
             translateX = 0;
             translateY = 0;
+            canvas.style.transition = 'transform 0.2s ease-out';
             updateTransform();
+            setTimeout(() => { canvas.style.transition = ''; }, 250);
             e.preventDefault();
         }
         lastTap = currentTime;
