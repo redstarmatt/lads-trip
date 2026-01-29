@@ -1819,7 +1819,7 @@ async function fetchPhotos() {
     } catch (e) {
         console.error('Photos fetch failed:', e);
         photosCache = JSON.parse(localStorage.getItem(PHOTOS_KEY) || '[]');
-        showPhotosSyncStatus('offline');
+        showPhotosSyncStatus('offline', 'fetch: ' + e.message);
         // If we have local photos not synced, try pushing them
         if (photosCache.length > 0) {
             await syncPhotosToCloud();
@@ -1843,18 +1843,19 @@ async function syncPhotosToCloud(retries = 2) {
             console.error(`Photos save attempt ${attempt + 1} failed:`, e);
             if (attempt < retries) {
                 await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+            } else {
+                showPhotosSyncStatus('offline', 'save: ' + e.message);
             }
         }
     }
-    showPhotosSyncStatus('offline');
     return false;
 }
 
-function showPhotosSyncStatus(status) {
+function showPhotosSyncStatus(status, detail) {
     const el = document.getElementById('photos-sync-status');
     if (!el) return;
     el.className = 'sync-status ' + status;
-    el.textContent = status === 'syncing' ? 'Syncing...' : status === 'synced' ? 'Synced' : 'Offline';
+    el.textContent = status === 'syncing' ? 'Syncing...' : status === 'synced' ? 'Synced' : 'Offline' + (detail ? ': ' + detail : '');
 }
 
 // -- Upload to Cloudinary --
