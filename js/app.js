@@ -2072,11 +2072,19 @@ function initPhotos() {
         });
     }
 
-    // Refresh button
+    // Refresh button - always force sync local data up then fetch
     const refreshBtn = document.getElementById('refresh-photos');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', async () => {
             refreshBtn.disabled = true;
+            // First push any local-only photos
+            const local = JSON.parse(localStorage.getItem(PHOTOS_KEY) || '[]');
+            if (local.length > 0) {
+                photosCache = local;
+                photosCache.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                await syncPhotosToCloud();
+            }
+            // Then fetch merged result
             await fetchPhotos();
             renderPhotosGrid();
             refreshBtn.disabled = false;
