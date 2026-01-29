@@ -340,7 +340,10 @@ function setupPinchZoom(wrapper, canvas) {
     let translateY = 0;
     let startX = 0;
     let startY = 0;
+    let isPinching = false;
     let isDragging = false;
+    let lastTap = 0;
+    const container = wrapper.parentElement;
 
     function getDistance(touches) {
         const dx = touches[0].clientX - touches[1].clientX;
@@ -348,62 +351,99 @@ function setupPinchZoom(wrapper, canvas) {
         return Math.sqrt(dx * dx + dy * dy);
     }
 
-    function updateTransform() {
+    function applyTransform() {
         canvas.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
+    }
+
+    // Block container scrolling when zoomed
+    function lockContainer() {
+        container.style.overflow = 'hidden';
+        container.style.touchAction = 'none';
+    }
+
+    function unlockContainer() {
+        container.style.overflow = 'auto';
+        container.style.touchAction = '';
     }
 
     wrapper.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
+            e.stopPropagation();
+            isPinching = true;
+            isDragging = false;
             startDistance = getDistance(e.touches);
             startScale = currentScale;
+            lockContainer();
         } else if (e.touches.length === 1 && currentScale > 1) {
+            e.preventDefault();
+            e.stopPropagation();
             isDragging = true;
             startX = e.touches[0].clientX - translateX;
             startY = e.touches[0].clientY - translateY;
+            lockContainer();
         }
     }, { passive: false });
 
     wrapper.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 2) {
+        if (e.touches.length === 2 && isPinching) {
             e.preventDefault();
-            const currentDistance = getDistance(e.touches);
-            const scaleChange = currentDistance / startDistance;
-            currentScale = Math.min(Math.max(startScale * scaleChange, 1), 5);
-
-            if (currentScale === 1) {
+            e.stopPropagation();
+            const dist = getDistance(e.touches);
+            currentScale = Math.min(Math.max(startScale * (dist / startDistance), 1), 5);
+            if (currentScale <= 1.01) {
+                currentScale = 1;
                 translateX = 0;
                 translateY = 0;
             }
-            updateTransform();
+            applyTransform();
         } else if (e.touches.length === 1 && isDragging && currentScale > 1) {
             e.preventDefault();
+            e.stopPropagation();
             translateX = e.touches[0].clientX - startX;
             translateY = e.touches[0].clientY - startY;
-            updateTransform();
+            applyTransform();
         }
     }, { passive: false });
 
-    wrapper.addEventListener('touchend', () => {
-        isDragging = false;
-    });
-
-    // Double-tap to reset zoom
-    let lastTap = 0;
     wrapper.addEventListener('touchend', (e) => {
-        const currentTime = new Date().getTime();
-        const tapLength = currentTime - lastTap;
-        if (tapLength < 300 && tapLength > 0) {
+        // Handle transition from 2 fingers to 1 during pinch
+        if (isPinching && e.touches.length === 1) {
+            isPinching = false;
+            if (currentScale > 1) {
+                isDragging = true;
+                startX = e.touches[0].clientX - translateX;
+                startY = e.touches[0].clientY - translateY;
+            }
+            return;
+        }
+
+        if (e.touches.length === 0) {
+            isPinching = false;
+            isDragging = false;
+            if (currentScale <= 1) {
+                currentScale = 1;
+                translateX = 0;
+                translateY = 0;
+                applyTransform();
+                unlockContainer();
+            }
+        }
+
+        // Double-tap to reset
+        const now = Date.now();
+        if (now - lastTap < 300 && now - lastTap > 0) {
             currentScale = 1;
             translateX = 0;
             translateY = 0;
             canvas.style.transition = 'transform 0.2s ease-out';
-            updateTransform();
+            applyTransform();
             setTimeout(() => { canvas.style.transition = ''; }, 250);
+            unlockContainer();
             e.preventDefault();
         }
-        lastTap = currentTime;
-    });
+        lastTap = now;
+    }, { passive: false });
 }
 
 // ============================================

@@ -907,13 +907,15 @@ body {
     overflow: auto;
     text-align: center;
     background: white;
-    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
 }
 
 .pdf-zoom-wrapper {
     display: inline-block;
     touch-action: none;
     overflow: visible;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .pdf-zoom-wrapper canvas {
