@@ -2115,29 +2115,36 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Register Service Worker
-// Service Worker with force update
+// Service Worker with force update and auto-reload
+const APP_VERSION = 'v46';
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
         try {
-            // Unregister old service workers and clear caches
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            for (const reg of registrations) {
-                await reg.unregister();
-                console.log('Unregistered old SW');
+            const lastVersion = localStorage.getItem('lads-app-version');
+
+            // If version changed, nuke everything and reload
+            if (lastVersion && lastVersion !== APP_VERSION) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const reg of registrations) await reg.unregister();
+                const cacheNames = await caches.keys();
+                for (const name of cacheNames) await caches.delete(name);
+                localStorage.setItem('lads-app-version', APP_VERSION);
+                window.location.reload();
+                return;
             }
 
-            // Clear all caches
-            const cacheNames = await caches.keys();
-            for (const name of cacheNames) {
-                await caches.delete(name);
-                console.log('Deleted cache:', name);
-            }
+            localStorage.setItem('lads-app-version', APP_VERSION);
 
-            // Register fresh
+            // Register / update SW
             const registration = await navigator.serviceWorker.register('./sw.js');
-            console.log('SW registered:', registration.scope);
-
-            // Force update check
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'activated') {
+                        window.location.reload();
+                    }
+                });
+            });
             registration.update();
         } catch (error) {
             console.log('SW setup error:', error);
