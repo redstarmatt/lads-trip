@@ -6,6 +6,7 @@ const ladsData = {
         name: 'Matt',
         fullName: 'Matthew Lewsey',
         outbound: { seat: '15A', group: '5', pdfPage: 1 },
+        returnFlight: { seat: '10D', group: '1', pdfPage: 1 },
         fiorentina: { sector: 'PLA', row: '1', seat: '30', gate: 'P02', pdfPage: 1 },
         verona: { sector: 'Curva Est Inf 8', row: '1', seat: '14', gate: '9', pdfFile: 'images/verona_matt.pdf' },
         train: { pkpass: 'images/train_matt.pkpass', coach: '2' }
@@ -14,6 +15,7 @@ const ladsData = {
         name: 'Andy',
         fullName: 'Andrew Brown',
         outbound: { seat: '15B', group: '5', pdfPage: 2 },
+        returnFlight: { seat: '10F', group: '1', pdfPage: 2 },
         fiorentina: { sector: 'PLA', row: '1', seat: '29', gate: 'P02', pdfPage: 2 },
         verona: { sector: 'Curva Est Inf 8', row: '1', seat: '10', gate: '9', pdfFile: 'images/verona_andy.pdf' },
         train: null // TBC
@@ -22,6 +24,7 @@ const ladsData = {
         name: 'Mark',
         fullName: 'Mark Brown',
         outbound: { seat: '15C', group: '5', pdfPage: 3 },
+        returnFlight: { seat: '10E', group: '1', pdfPage: 3 },
         fiorentina: { sector: 'PLA', row: '1', seat: '28', gate: 'P02', pdfPage: 3 },
         verona: { sector: 'Curva Est Inf 8', row: '1', seat: '13', gate: '9', pdfFile: 'images/verona_mark.pdf' },
         train: { pkpass: 'images/train_mark.pkpass', coach: '2' }
@@ -30,6 +33,7 @@ const ladsData = {
         name: 'Ken',
         fullName: 'Kenneth Chu',
         outbound: { seat: '15D', group: '5', pdfPage: 4 },
+        returnFlight: { seat: '10B', group: '1', pdfPage: 4 },
         fiorentina: { sector: 'PLA', row: '1', seat: '26', gate: 'P02', pdfFile: 'images/fiorentina_ken_chris.pdf', pdfPage: 2 },
         verona: { sector: 'Curva Est Inf 8', row: '1', seat: '12', gate: '9', pdfFile: 'images/verona_ken.pdf' },
         train: { pkpass: 'images/train_ken.pkpass', coach: '2' }
@@ -38,6 +42,7 @@ const ladsData = {
         name: 'Chris',
         fullName: 'Christopher Phillips',
         outbound: { seat: '15E', group: '5', pdfPage: 5 },
+        returnFlight: { seat: '7E', group: '3', pdfPage: 5 },
         fiorentina: { sector: 'PLA', row: '1', seat: '27', gate: 'P02', pdfFile: 'images/fiorentina_ken_chris.pdf', pdfPage: 1 },
         verona: { sector: 'Curva Est Inf 8', row: '1', seat: '11', gate: '9', pdfFile: 'images/verona_chris.pdf' },
         train: { pkpass: 'images/train_chris.pkpass', coach: '2' }
@@ -202,6 +207,14 @@ function viewBoardingPass() {
     const ladInfo = ladsData[currentLad];
     const page = ladInfo.outbound.pdfPage;
     openPdfModal('images/boarding_pass.pdf', page, `${ladInfo.name}'s Boarding Pass`);
+}
+
+function viewReturnBoardingPass() {
+    if (!currentLad) return;
+    const ladInfo = ladsData[currentLad];
+    if (!ladInfo.returnFlight) return;
+    const page = ladInfo.returnFlight.pdfPage;
+    openPdfModal('images/return_boarding_pass.pdf', page, `${ladInfo.name}'s Return Boarding Pass`);
 }
 
 function viewFiorentinaTicket() {
