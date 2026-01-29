@@ -1794,7 +1794,9 @@ async function fetchPhotos() {
         const response = await fetch(PHOTOS_JSONBLOB_URL);
         if (!response.ok) throw new Error('HTTP ' + response.status);
 
-        const data = await response.json();
+        const text = await response.text();
+        let data;
+        try { data = JSON.parse(text); } catch (e) { throw new Error('Invalid JSON from proxy'); }
         const cloudPhotos = data.photos || [];
 
         // Merge with local
@@ -1818,25 +1820,34 @@ async function fetchPhotos() {
         console.error('Photos fetch failed:', e);
         photosCache = JSON.parse(localStorage.getItem(PHOTOS_KEY) || '[]');
         showPhotosSyncStatus('offline');
+        // If we have local photos not synced, try pushing them
+        if (photosCache.length > 0) {
+            await syncPhotosToCloud();
+        }
     }
     return photosCache;
 }
 
-async function syncPhotosToCloud() {
-    try {
-        const response = await fetch(PHOTOS_JSONBLOB_URL, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ photos: photosCache })
-        });
-        if (!response.ok) throw new Error('HTTP ' + response.status);
-        showPhotosSyncStatus('synced');
-        return true;
-    } catch (e) {
-        console.error('Photos save failed:', e);
-        showPhotosSyncStatus('offline');
-        return false;
+async function syncPhotosToCloud(retries = 2) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            const response = await fetch(PHOTOS_JSONBLOB_URL, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ photos: photosCache })
+            });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            showPhotosSyncStatus('synced');
+            return true;
+        } catch (e) {
+            console.error(`Photos save attempt ${attempt + 1} failed:`, e);
+            if (attempt < retries) {
+                await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+            }
+        }
     }
+    showPhotosSyncStatus('offline');
+    return false;
 }
 
 function showPhotosSyncStatus(status) {
