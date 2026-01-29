@@ -60,6 +60,7 @@
         </header>
 
         <nav class="tab-nav">
+            <button class="tab-btn" data-tab="photos">Photos</button>
             <button class="tab-btn active" data-tab="itinerary">Overview</button>
             <button class="tab-btn" data-tab="flights">Flights</button>
             <button class="tab-btn" data-tab="trains">Trains</button>
@@ -1061,7 +1062,61 @@
                     <button id="bclc-play-again-btn" class="bclc-start-btn">Play Again</button>
                 </div>
             </section>
+
+            <!-- Photos Tab -->
+            <section id="photos" class="tab-content">
+                <!-- Sync Status Bar -->
+                <div class="sync-bar">
+                    <span id="photos-sync-status" class="sync-status">Synced</span>
+                    <button id="refresh-photos" class="refresh-btn">Refresh</button>
+                </div>
+
+                <!-- Upload Card -->
+                <div class="card photo-upload-card">
+                    <div class="card-header">
+                        <span class="card-label">Upload Photo</span>
+                    </div>
+                    <div class="photo-upload-form">
+                        <div class="photo-file-picker" id="photo-file-picker">
+                            <input type="file" id="photo-file-input" accept="image/*" capture="environment" hidden>
+                            <button type="button" class="photo-pick-btn" id="photo-pick-btn">Choose Photo</button>
+                        </div>
+                        <div class="photo-preview-container" id="photo-preview-container" style="display:none;">
+                            <img id="photo-preview-img" class="photo-preview-img" src="" alt="Preview">
+                            <button type="button" class="photo-preview-remove" id="photo-preview-remove">&times;</button>
+                        </div>
+                        <input type="text" id="photo-caption" class="photo-caption-input" placeholder="Add a caption (optional)">
+                        <button type="button" class="photo-upload-btn" id="photo-upload-btn" disabled>Upload</button>
+                        <div class="photo-progress-bar" id="photo-progress-bar" style="display:none;">
+                            <div class="photo-progress-fill" id="photo-progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Photo Count -->
+                <div class="photo-count" id="photo-count"></div>
+
+                <!-- Photo Grid -->
+                <div class="photo-grid" id="photo-grid">
+                    <p class="no-photos">No photos yet. Be the first to share!</p>
+                </div>
+            </section>
         </main>
+    </div>
+
+    <!-- Photo Viewer Modal -->
+    <div id="photo-viewer-modal" class="photo-viewer-modal">
+        <div class="photo-viewer-header">
+            <div class="photo-viewer-info">
+                <span class="photo-viewer-uploader" id="photo-viewer-uploader"></span>
+                <span class="photo-viewer-time" id="photo-viewer-time"></span>
+            </div>
+            <button class="photo-viewer-close" id="photo-viewer-close">&times;</button>
+        </div>
+        <div class="photo-viewer-body">
+            <img id="photo-viewer-img" class="photo-viewer-img" src="" alt="Photo">
+        </div>
+        <div class="photo-viewer-caption" id="photo-viewer-caption"></div>
     </div>
 
     <!-- PDF Modal -->

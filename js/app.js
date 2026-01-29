@@ -1770,6 +1770,316 @@ document.addEventListener('DOMContentLoaded', () => {
     BCLC.init();
 });
 
+// ============================================
+// PHOTOS - Shared Photo Feed
+// ============================================
+
+const PHOTOS_KEY = 'lads-photos';
+const PHOTOS_JSONBLOB_ID = '019c0af4-c852-7946-9c93-bb84c7c5f786';
+const PHOTOS_JSONBLOB_BASE = `https://jsonblob.com/api/jsonBlob/${PHOTOS_JSONBLOB_ID}`;
+const PHOTOS_JSONBLOB_URL = `https://corsproxy.io/?${encodeURIComponent(PHOTOS_JSONBLOB_BASE)}`;
+const CLOUDINARY_CLOUD_NAME = 'dpokq9eix';
+const CLOUDINARY_UPLOAD_PRESET = 'ladsladslads';
+const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+
+let photosCache = [];
+let photosLastSyncTime = 0;
+let selectedPhotoFile = null;
+
+// -- Sync --
+
+async function fetchPhotos() {
+    showPhotosSyncStatus('syncing');
+    try {
+        const response = await fetch(PHOTOS_JSONBLOB_URL);
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+
+        const data = await response.json();
+        const cloudPhotos = data.photos || [];
+
+        // Merge with local
+        const local = JSON.parse(localStorage.getItem(PHOTOS_KEY) || '[]');
+        const merged = new Map();
+        local.forEach(p => merged.set(p.id, p));
+        cloudPhotos.forEach(p => merged.set(p.id, p));
+
+        photosCache = Array.from(merged.values());
+        photosCache.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        localStorage.setItem(PHOTOS_KEY, JSON.stringify(photosCache));
+
+        // Push local-only items to cloud
+        if (photosCache.length > cloudPhotos.length) {
+            await syncPhotosToCloud();
+        }
+
+        photosLastSyncTime = Date.now();
+        showPhotosSyncStatus('synced');
+    } catch (e) {
+        console.error('Photos fetch failed:', e);
+        photosCache = JSON.parse(localStorage.getItem(PHOTOS_KEY) || '[]');
+        showPhotosSyncStatus('offline');
+    }
+    return photosCache;
+}
+
+async function syncPhotosToCloud() {
+    try {
+        const response = await fetch(PHOTOS_JSONBLOB_URL, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ photos: photosCache })
+        });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        showPhotosSyncStatus('synced');
+        return true;
+    } catch (e) {
+        console.error('Photos save failed:', e);
+        showPhotosSyncStatus('offline');
+        return false;
+    }
+}
+
+function showPhotosSyncStatus(status) {
+    const el = document.getElementById('photos-sync-status');
+    if (!el) return;
+    el.className = 'sync-status ' + status;
+    el.textContent = status === 'syncing' ? 'Syncing...' : status === 'synced' ? 'Synced' : 'Offline';
+}
+
+// -- Upload to Cloudinary --
+
+async function uploadToCloudinary(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+    const progressBar = document.getElementById('photo-progress-bar');
+    const progressFill = document.getElementById('photo-progress-fill');
+    if (progressBar) progressBar.style.display = 'block';
+
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', CLOUDINARY_UPLOAD_URL);
+
+        xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable && progressFill) {
+                const pct = Math.round((e.loaded / e.total) * 100);
+                progressFill.style.width = pct + '%';
+            }
+        });
+
+        xhr.addEventListener('load', () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                const data = JSON.parse(xhr.responseText);
+                resolve({
+                    url: data.secure_url,
+                    thumbnailUrl: data.secure_url.replace('/upload/', '/upload/w_400,h_400,c_fill/'),
+                    publicId: data.public_id
+                });
+            } else {
+                reject(new Error('Upload failed: ' + xhr.status));
+            }
+        });
+
+        xhr.addEventListener('error', () => reject(new Error('Upload network error')));
+        xhr.send(formData);
+    });
+}
+
+async function handlePhotoUpload() {
+    if (!currentLad || !selectedPhotoFile) return;
+
+    const uploadBtn = document.getElementById('photo-upload-btn');
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = 'Uploading...';
+
+    try {
+        const result = await uploadToCloudinary(selectedPhotoFile);
+
+        const photo = {
+            id: generateUniqueId(),
+            url: result.url,
+            thumbnailUrl: result.thumbnailUrl,
+            publicId: result.publicId,
+            uploader: currentLad,
+            caption: document.getElementById('photo-caption')?.value.trim() || '',
+            timestamp: new Date().toISOString()
+        };
+
+        photosCache.unshift(photo);
+        localStorage.setItem(PHOTOS_KEY, JSON.stringify(photosCache));
+        await syncPhotosToCloud();
+
+        clearPhotoPreview();
+        renderPhotosGrid();
+    } catch (e) {
+        console.error('Photo upload error:', e);
+        alert('Upload failed. Please try again.');
+    } finally {
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = 'Upload';
+        const progressBar = document.getElementById('photo-progress-bar');
+        if (progressBar) progressBar.style.display = 'none';
+        const progressFill = document.getElementById('photo-progress-fill');
+        if (progressFill) progressFill.style.width = '0%';
+    }
+}
+
+// -- File Picker --
+
+function handlePhotoFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    selectedPhotoFile = file;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        const previewContainer = document.getElementById('photo-preview-container');
+        const previewImg = document.getElementById('photo-preview-img');
+        if (previewImg) previewImg.src = ev.target.result;
+        if (previewContainer) previewContainer.style.display = 'block';
+
+        const uploadBtn = document.getElementById('photo-upload-btn');
+        if (uploadBtn) uploadBtn.disabled = false;
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearPhotoPreview() {
+    selectedPhotoFile = null;
+    const previewContainer = document.getElementById('photo-preview-container');
+    const previewImg = document.getElementById('photo-preview-img');
+    const fileInput = document.getElementById('photo-file-input');
+    const captionInput = document.getElementById('photo-caption');
+    const uploadBtn = document.getElementById('photo-upload-btn');
+
+    if (previewContainer) previewContainer.style.display = 'none';
+    if (previewImg) previewImg.src = '';
+    if (fileInput) fileInput.value = '';
+    if (captionInput) captionInput.value = '';
+    if (uploadBtn) uploadBtn.disabled = true;
+}
+
+// -- Render --
+
+function renderPhotosGrid() {
+    const grid = document.getElementById('photo-grid');
+    const countEl = document.getElementById('photo-count');
+    if (!grid) return;
+
+    if (photosCache.length === 0) {
+        grid.innerHTML = '<p class="no-photos">No photos yet. Be the first to share!</p>';
+        if (countEl) countEl.textContent = '';
+        return;
+    }
+
+    if (countEl) countEl.textContent = photosCache.length + ' photo' + (photosCache.length !== 1 ? 's' : '');
+
+    grid.innerHTML = photosCache.map(photo => {
+        const uploaderName = ladsData[photo.uploader]?.name || photo.uploader;
+        return `
+            <div class="photo-grid-item" onclick="openPhotoViewer('${photo.id}')">
+                <img src="${photo.thumbnailUrl}" alt="${photo.caption || 'Photo'}" loading="lazy">
+                <div class="photo-grid-overlay">
+                    <span class="photo-grid-uploader">${uploaderName}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// -- Viewer --
+
+function openPhotoViewer(id) {
+    const photo = photosCache.find(p => p.id === id);
+    if (!photo) return;
+
+    const modal = document.getElementById('photo-viewer-modal');
+    const img = document.getElementById('photo-viewer-img');
+    const uploader = document.getElementById('photo-viewer-uploader');
+    const time = document.getElementById('photo-viewer-time');
+    const caption = document.getElementById('photo-viewer-caption');
+
+    const uploaderName = ladsData[photo.uploader]?.name || photo.uploader;
+    const date = new Date(photo.timestamp);
+    const dateStr = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+    if (img) img.src = photo.url;
+    if (uploader) uploader.textContent = uploaderName;
+    if (time) time.textContent = dateStr;
+    if (caption) {
+        caption.textContent = photo.caption || '';
+        caption.style.display = photo.caption ? 'block' : 'none';
+    }
+
+    if (modal) modal.classList.add('active');
+}
+
+function closePhotoViewer() {
+    const modal = document.getElementById('photo-viewer-modal');
+    if (modal) modal.classList.remove('active');
+    const img = document.getElementById('photo-viewer-img');
+    if (img) img.src = '';
+}
+
+// -- Init --
+
+function initPhotos() {
+    const fileInput = document.getElementById('photo-file-input');
+    const pickBtn = document.getElementById('photo-pick-btn');
+    const removeBtn = document.getElementById('photo-preview-remove');
+    const uploadBtn = document.getElementById('photo-upload-btn');
+    const closeBtn = document.getElementById('photo-viewer-close');
+    const viewerModal = document.getElementById('photo-viewer-modal');
+
+    if (fileInput) fileInput.addEventListener('change', handlePhotoFileSelect);
+    if (pickBtn) pickBtn.addEventListener('click', () => fileInput?.click());
+    if (removeBtn) removeBtn.addEventListener('click', clearPhotoPreview);
+    if (uploadBtn) uploadBtn.addEventListener('click', handlePhotoUpload);
+    if (closeBtn) closeBtn.addEventListener('click', closePhotoViewer);
+    if (viewerModal) {
+        viewerModal.addEventListener('click', (e) => {
+            if (e.target === viewerModal) closePhotoViewer();
+        });
+    }
+
+    // Refresh button
+    const refreshBtn = document.getElementById('refresh-photos');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+            refreshBtn.disabled = true;
+            await fetchPhotos();
+            renderPhotosGrid();
+            refreshBtn.disabled = false;
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    initPhotos();
+    // Load from local cache first
+    const stored = localStorage.getItem(PHOTOS_KEY);
+    photosCache = stored ? JSON.parse(stored) : [];
+    renderPhotosGrid();
+    // Then fetch latest
+    await fetchPhotos();
+    renderPhotosGrid();
+});
+
+// Auto-refresh when photos tab becomes visible
+document.addEventListener('DOMContentLoaded', () => {
+    const photosTab = document.querySelector('[data-tab="photos"]');
+    if (photosTab) {
+        photosTab.addEventListener('click', async () => {
+            if (Date.now() - photosLastSyncTime > 10000) {
+                await fetchPhotos();
+                renderPhotosGrid();
+            }
+        });
+    }
+});
+
 // Register Service Worker
 // Service Worker with force update
 if ('serviceWorker' in navigator) {
