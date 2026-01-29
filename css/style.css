@@ -907,28 +907,59 @@ body {
     overflow: auto;
     text-align: center;
     background: white;
-    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
 }
 
 .pdf-zoom-wrapper {
     display: inline-block;
-    touch-action: none;
     overflow: visible;
-    user-select: none;
-    -webkit-user-select: none;
 }
 
 .pdf-zoom-wrapper canvas {
+    display: block;
     max-width: 100%;
     height: auto;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    transform-origin: center center;
+    transform-origin: top left;
 }
 
 .pdf-container canvas {
     max-width: 100%;
     height: auto;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.pdf-zoom-controls {
+    position: sticky;
+    bottom: 12px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    padding-top: 12px;
+    z-index: 10;
+}
+
+.pdf-zoom-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: var(--secondary);
+    color: var(--text);
+    font-size: 1.4rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pdf-zoom-btn:active {
+    background: var(--accent);
+    transform: scale(0.92);
 }
 
 .loading-msg {

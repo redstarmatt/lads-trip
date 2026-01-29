@@ -321,8 +321,8 @@ async function renderPdfPage(url, pageNum, container) {
             viewport: viewport
         }).promise;
 
-        // Add pinch-to-zoom functionality
-        setupPinchZoom(wrapper, canvas);
+        // Add zoom controls
+        setupZoomControls(wrapper, canvas, container);
     } catch (error) {
         console.error('Error rendering PDF:', error);
         container.innerHTML = `
@@ -332,115 +332,46 @@ async function renderPdfPage(url, pageNum, container) {
     }
 }
 
-function setupPinchZoom(wrapper, canvas) {
+function setupZoomControls(wrapper, canvas, container) {
     let scale = 1;
-    let tx = 0;
-    let ty = 0;
-    let dragStartX = 0;
-    let dragStartY = 0;
-    let isDragging = false;
-    let lastTap = 0;
-    const container = wrapper.parentElement;
+    const steps = [1, 1.5, 2, 3];
+    let stepIndex = 0;
+
+    // Create zoom buttons
+    const controls = document.createElement('div');
+    controls.className = 'pdf-zoom-controls';
+    controls.innerHTML = `
+        <button class="pdf-zoom-btn" id="pdf-zoom-in">+</button>
+        <button class="pdf-zoom-btn" id="pdf-zoom-out">&minus;</button>
+    `;
+    container.appendChild(controls);
 
     function apply() {
-        canvas.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+        canvas.style.transition = 'transform 0.2s ease-out';
+        canvas.style.transform = `scale(${scale})`;
+        // Adjust wrapper size so container scroll works
+        wrapper.style.width = (canvas.width / 3 * scale) + 'px';
+        wrapper.style.height = (canvas.height / 3 * scale) + 'px';
+        setTimeout(() => { canvas.style.transition = ''; }, 250);
     }
 
-    function lock() {
-        container.style.overflow = 'hidden';
-    }
-
-    function unlock() {
-        container.style.overflow = 'auto';
-    }
-
-    // --- Safari gesture events (reliable on iOS) ---
-    let gestureStartScale = 1;
-    wrapper.addEventListener('gesturestart', (e) => {
-        e.preventDefault();
-        gestureStartScale = scale;
-        lock();
-    });
-    wrapper.addEventListener('gesturechange', (e) => {
-        e.preventDefault();
-        scale = Math.min(Math.max(gestureStartScale * e.scale, 1), 5);
-        if (scale <= 1.02) { scale = 1; tx = 0; ty = 0; }
-        apply();
-    });
-    wrapper.addEventListener('gestureend', (e) => {
-        e.preventDefault();
-        if (scale <= 1) unlock();
-    });
-
-    // --- Touch events (pan when zoomed + fallback pinch for Android) ---
-    let touchStartDist = 0;
-    let touchStartScale = 1;
-    let pinching = false;
-
-    function dist(t) {
-        const dx = t[0].clientX - t[1].clientX;
-        const dy = t[0].clientY - t[1].clientY;
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    wrapper.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 2) {
-            e.preventDefault();
-            pinching = true;
-            isDragging = false;
-            touchStartDist = dist(e.touches);
-            touchStartScale = scale;
-            lock();
-        } else if (e.touches.length === 1 && scale > 1) {
-            e.preventDefault();
-            isDragging = true;
-            dragStartX = e.touches[0].clientX - tx;
-            dragStartY = e.touches[0].clientY - ty;
-        }
-    }, { passive: false });
-
-    wrapper.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 2 && pinching) {
-            e.preventDefault();
-            scale = Math.min(Math.max(touchStartScale * (dist(e.touches) / touchStartDist), 1), 5);
-            if (scale <= 1.02) { scale = 1; tx = 0; ty = 0; }
-            apply();
-        } else if (e.touches.length === 1 && isDragging && scale > 1) {
-            e.preventDefault();
-            tx = e.touches[0].clientX - dragStartX;
-            ty = e.touches[0].clientY - dragStartY;
+    controls.querySelector('#pdf-zoom-in').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (stepIndex < steps.length - 1) {
+            stepIndex++;
+            scale = steps[stepIndex];
             apply();
         }
-    }, { passive: false });
+    });
 
-    wrapper.addEventListener('touchend', (e) => {
-        if (pinching && e.touches.length === 1) {
-            pinching = false;
-            if (scale > 1) {
-                isDragging = true;
-                dragStartX = e.touches[0].clientX - tx;
-                dragStartY = e.touches[0].clientY - ty;
-            }
-            return;
-        }
-        if (e.touches.length === 0) {
-            pinching = false;
-            isDragging = false;
-            if (scale <= 1) unlock();
-        }
-
-        // Double-tap to reset
-        const now = Date.now();
-        if (now - lastTap < 300 && now - lastTap > 0 && e.touches.length === 0) {
-            scale = 1; tx = 0; ty = 0;
-            canvas.style.transition = 'transform 0.2s ease-out';
+    controls.querySelector('#pdf-zoom-out').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (stepIndex > 0) {
+            stepIndex--;
+            scale = steps[stepIndex];
             apply();
-            setTimeout(() => { canvas.style.transition = ''; }, 250);
-            unlock();
-            e.preventDefault();
         }
-        lastTap = now;
-    }, { passive: false });
+    });
 }
 
 // ============================================
